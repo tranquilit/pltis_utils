@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <Package Version="4">
+    <PathDelim Value="\"/>
+    <Name Value="pltis_utils"/>
+    <Author Value="Tranquil IT Systems"/>
+    <CompilerOptions>
+      <Version Value="11"/>
+      <PathDelim Value="\"/>
+      <SearchPaths>
+        <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+      </SearchPaths>
+      <Other>
+        <CompilerMessages>
+          <MsgFileName Value=""/>
+        </CompilerMessages>
+        <CompilerPath Value="$(CompPath)"/>
+      </Other>
+    </CompilerOptions>
+    <Description Value="Various strings, datetime, etc routines"/>
+    <Version Minor="1"/>
+    <Files Count="4">
+      <Item1>
+        <Filename Value="tisutils.pas"/>
+        <UnitName Value="tisutils"/>
+      </Item1>
+      <Item2>
+        <Filename Value="tisdatetime.pas"/>
+        <UnitName Value="TisDateTime"/>
+      </Item2>
+      <Item3>
+        <Filename Value="tishttp.pas"/>
+        <UnitName Value="tishttp"/>
+      </Item3>
+      <Item4>
+        <Filename Value="tisstrings.pas"/>
+        <UnitName Value="tisstrings"/>
+      </Item4>
+    </Files>
+    <Type Value="RunAndDesignTime"/>
+    <RequiredPkgs Count="3">
+      <Item1>
+        <PackageName Value="pl_indycomp"/>
+      </Item1>
+      <Item2>
+        <PackageName Value="LCL"/>
+      </Item2>
+      <Item3>
+        <PackageName Value="FCL"/>
+      </Item3>
+    </RequiredPkgs>
+    <UsageOptions>
+      <UnitPath Value="$(PkgOutDir)"/>
+    </UsageOptions>
+    <PublishOptions>
+      <Version Value="2"/>
+    </PublishOptions>
+  </Package>
+</CONFIG>

@@ -19,7 +19,7 @@
     </CompilerOptions>
     <Description Value="Various strings, datetime, etc routines"/>
     <Version Minor="1"/>
-    <Files Count="4">
+    <Files Count="6">
       <Item1>
         <Filename Value="tisutils.pas"/>
         <UnitName Value="tisutils"/>
@@ -36,6 +36,14 @@
         <Filename Value="tisstrings.pas"/>
         <UnitName Value="tisstrings"/>
       </Item4>
+      <Item5>
+        <Filename Value="tisinifiles.pas"/>
+        <UnitName Value="tisinifiles"/>
+      </Item5>
+      <Item6>
+        <Filename Value="tiscommon.pas"/>
+        <UnitName Value="tiscommon"/>
+      </Item6>
     </Files>
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="3">

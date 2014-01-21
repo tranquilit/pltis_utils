@@ -1,20 +1,16 @@
 unit tisutils;
-
-{$mode objfpc}
+{$mode delphi}
 {$h+}
-
 
 interface
 
 uses
-	LCLIntf, LCLType, LMessages, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,FileUtil, IniFiles;
-
+	Classes,SysUtils,IniFiles;
 type
   TUrlIniFile=Class(TMemIniFile)
     public
       constructor Create(const URL: string);
   end;
-
 
 function Appuserinipath:String;
 function GetUserName : String;
@@ -39,18 +35,15 @@ function httpget(url:String):String;
 // IMPORTANT : stream should be freed by the caller after use !
 function httpNewStream(url:String):TStream;
 
-
 function phonenormalize(phone:String):String;
 function phonesimplify(number:String):String;
 
 function ISODebutSem(ADate:TDateTime):TDateTime;
 function ISOFinSem(ADate:TDateTime):TDateTime;
 
-
 implementation
 
-uses IdHTTP,tisDateTime,tisstrings;
-
+uses FileUtil,IdHTTP,tisdatetime,tisstrings;
 
 function GetCmdParams(ID:String;Default:String=''):String;
 var
@@ -242,7 +235,5 @@ begin
      if CharIsDigit(number[i]) or (number[i]='+') then
       Result := Result + number[i];
 end;
-
-
 
 end.

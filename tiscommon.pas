@@ -345,7 +345,7 @@ begin
           until bytesRead = 0;
         end
         else
-           raise Exception.Create('Unable to download: '+URL+' HTTP Status:'+res+#13#10+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')');
+           raise Exception.Create('Unable to download: '+URL+' HTTP Status: '+res);
       end
       else
          raise Exception.Create('Unable to download: '+URL+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')');
@@ -449,15 +449,15 @@ begin
 
       hHTTP := InternetConnect(hInet, PChar(uri.Host), StrtoInt(uri.Port), PCHAR(uri.Username),PCHAR(uri.Password), INTERNET_SERVICE_HTTP, 0, 1);
       if hHTTP =Nil then
-          Raise Exception.Create('Unable to connect to '+url+' code : '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
+          Raise Exception.Create('Unable to connect to '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
       try
         hReq := HttpOpenRequest(hHTTP, PChar('POST'), PChar(uri.Document), nil, nil, @accept, 0, 1);
         if hReq=Nil then
-            Raise Exception.Create('Unable to POST to '+url+' code : '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
+            Raise Exception.Create('Unable to POST to: '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
         try
           pdata := Data;
           if not HttpSendRequest(hReq, PChar(header), length(header), PChar(pdata), length(pdata)) then
-             Raise Exception.Create('Unable to send data to '+url+' code : '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
+             Raise Exception.Create('Unable to send data to: '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
 
           dwIndex  := 0;
           dwCodeLen := 10;
@@ -478,10 +478,10 @@ begin
               until bytesRead = 0;
             end
             else
-               raise Exception.Create('Unable to get return data for '+URL+#13#10+'HTTP Status:'+res+#13#10+' code : '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
+               raise Exception.Create('Unable to get return data for: '+URL+' HTTP Status: '+res);
           end
           else
-              Raise Exception.Create('Unable to get http status for '+url+' code : '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
+              Raise Exception.Create('Unable to get http status for: '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
 
         finally
           InternetCloseHandle(hReq);

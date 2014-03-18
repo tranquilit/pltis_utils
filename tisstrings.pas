@@ -16,6 +16,9 @@ unit tisstrings;
 
 {$mode objfpc}{$H+}
 {$define UNICODE_RTL_DATABASE}
+
+{.$mode delphiunicode}
+{.$codepage UTF8}
 interface
 
 uses
@@ -122,7 +125,7 @@ resourcestring
 
 type
   Float = Extended;
-  TDynStringArray        = array of string;
+  TDynStringArray        = array of Ansistring;
   TCharValidator = function(const C: Char): Boolean;
 
   function ArrayContainsChar(const Chars: array of Char; const C: Char): Boolean; overload;
@@ -130,7 +133,7 @@ type
 
 // String Search and Replace Routines
 function StrCharCount(const S: string; C: Char): SizeInt; overload;
-function StrCharsCount(const S: string; const Chars: TCharValidator): SizeInt;
+function StrCharsCount(const S: string; const Chars: TCharValidator): SizeInt; overload;
 function StrCharsCount(const S: string; const Chars: array of Char): SizeInt; overload;
 function StrStrCount(const S, SubS: string): SizeInt;
 function StrCompare(const S1, S2: string; CaseSensitive: Boolean = False): SizeInt;
@@ -235,9 +238,8 @@ function FileToString(const FileName: string): {$IFDEF COMPILER12_UP}RawByteStri
 procedure StringToFile(const FileName: string; const Contents: {$IFDEF COMPILER12_UP}RawByteString{$ELSE}AnsiString{$ENDIF};
   Append: Boolean = False);
 
-function StrToken(var S: string; Separator: Char): string;
-procedure StrTokens(const S: string; const List: TStrings);
-procedure StrTokenToStrings(S: string; Separator: Char; const List: TStrings);
+function StrToken(var S: ansistring; Separator: ansiString): ansistring;
+procedure StrTokenToStrings(S: ansistring; Separator: Char; const List: TStrings);
 function StrWord(const S: string; var Index: SizeInt; out Word: string): Boolean; overload;
 function StrWord(var S: PChar; out Word: string): Boolean; overload;
 function StrIdent(const S: string; var Index: SizeInt; out Ident: string): Boolean; overload;
@@ -281,7 +283,7 @@ function CharLower(const C: Char): Char; {$IFDEF SUPPORTS_INLINE} inline; {$ENDI
 function CharUpper(const C: Char): Char; {$IFDEF SUPPORTS_INLINE} inline; {$ENDIF}
 function CharToggleCase(const C: Char): Char;
 
-function Split(St: String; Sep: Char): TDynStringArray;
+function Split(St: AnsiString; Sep: AnsiString): TDynStringArray;
 //function Join(Sep: String; StrArray : TDynStringArray): String;
 
 
@@ -599,7 +601,7 @@ end;
 
 function StrIPos(const SubStr, S: string): SizeInt;
 begin
-  Result := Pos(StrUpper(PChar(SubStr)), StrUpper(PChar(S)));
+  Result := Pos(UpperCase(SubStr), UpperCase(S));
 end;
 
 function StrIPrefixIndex(const S: string; const Prefixes: array of string): SizeInt;
@@ -1901,7 +1903,7 @@ begin
   end;
 end;
 
-function StrToken(var S: string; Separator: Char): string;
+function StrToken(var S: ansistring; Separator: ansiString): ansistring;
 var
   I: SizeInt;
 begin
@@ -1909,7 +1911,7 @@ begin
   if I <> 0 then
   begin
     Result := Copy(S, 1, I - 1);
-    Delete(S, 1, I);
+    Delete(S, length(Separator), I);
   end
   else
   begin
@@ -1918,29 +1920,6 @@ begin
   end;
 end;
 
-procedure StrTokens(const S: string; const List: TStrings);
-var
-  Start: PChar;
-  Token: string;
-  Done:  Boolean;
-begin
-  Assert(List <> nil);
-  if List = nil then
-    Exit;
-
-  List.BeginUpdate;
-  try
-    List.Clear;
-    Start := Pointer(S);
-    repeat
-      Done := tisStrings.StrWord(Start, Token);
-      if Token <> '' then
-        List.Add(Token);
-    until Done;
-  finally
-    List.EndUpdate;
-  end;
-end;
 
 function StrWord(const S: string; var Index: SizeInt; out Word: string): Boolean;
 var
@@ -2113,9 +2092,9 @@ begin
   end;
 end;
 
-procedure StrTokenToStrings(S: string; Separator: Char; const List: TStrings);
+procedure StrTokenToStrings(S: ansistring; Separator: Char; const List: TStrings);
 var
-  Token: string;
+  Token: ansistring;
 begin
   Assert(List <> nil);
 
@@ -2149,9 +2128,9 @@ begin
     Result := nil;
 end;
 
-function Split(St: String; Sep: Char): TDynStringArray;
+function Split(St: AnsiString; Sep: AnsiString): TDynStringArray;
 var
-  tok : String;
+  tok : AnsiString;
   len : integer;
 begin
   len := 0;

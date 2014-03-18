@@ -23,7 +23,8 @@ unit tiscommon;
 # -----------------------------------------------------------------------
 }
 
-{$mode objfpc}{$H+}
+{$mode delphiunicode}
+{$codepage UTF8}
 
 interface
 
@@ -35,18 +36,18 @@ type TProgressCallback=function(Receiver:TObject;current,total:Integer):Boolean 
 Function  Wget(const fileURL, DestFileName: Utf8String; CBReceiver:TObject=Nil;progressCallback:TProgressCallback=Nil;enableProxy:Boolean=False): boolean;
 Function  Wget_try(const fileURL: Utf8String;enableProxy:Boolean=False): boolean;
 
-function httpGetString(url: string; enableProxy:Boolean= False;
-    ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000):Utf8String;
-function httpPostData(const UserAgent: string; const url: string; const Data: AnsiString; enableProxy:Boolean= False;
-   ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000):Utf8String;
-function SetToIgnoreCerticateErrors(oRequestHandle:HINTERNET; var aErrorMsg: string): Boolean;
-function GetWinInetError(ErrorCode:Cardinal): string;
+function httpGetString(url: ansistring; enableProxy:Boolean= False;
+    ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000):RawByteString;
+function httpPostData(const UserAgent: ansistring; const url: Ansistring; const Data: RawByteString; enableProxy:Boolean= False;
+   ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000):RawByteString;
+function SetToIgnoreCerticateErrors(oRequestHandle:HINTERNET; var aErrorMsg: ansistring): Boolean;
+function GetWinInetError(ErrorCode:Cardinal): ansistring;
 Procedure UnzipFile(ZipFilePath,OutputPath:Utf8String);
 Procedure AddToUserPath(APath:Utf8String);
 procedure AddToSystemPath(APath:Utf8String);
 
-procedure UpdateCurrentApplication(fromURL:String;Restart:Boolean;restartparam:Utf8String);
-procedure UpdateApplication(fromURL:String;SetupExename,SetupParams,ExeName,RestartParam:Utf8String);
+procedure UpdateCurrentApplication(fromURL:String;Restart:Boolean;restartparam:String);
+procedure UpdateApplication(fromURL:String;SetupExename,SetupParams,ExeName,RestartParam:String);
 
 function  GetApplicationVersion(FileName:Utf8String=''): Utf8String;
 
@@ -62,15 +63,16 @@ function GetUserName : AnsiString;
 function GetWorkgroupName: AnsiString;
 function GetDomainName: AnsiString;
 
-function GetCurrentUserSid: string;
+function GetCurrentUserSid: Ansistring;
 
-function UserLogin(user,password,domain:String):THandle;
-function UserDomain(htoken:THandle):String;
+function UserLogin(user,password,domain:AnsiString):THandle;
+function UserDomain(htoken:THandle):AnsiString;
 function OnSystemAccount: Boolean;
 
 function GetGroups(srvName, usrName: WideString):TDynStringArray;
 
-function SortableVersion(VersionString:String):String;
+function SortableVersion(VersionString:AnsiString):AnsiString;
+function CompareVersion(v1,v2:AnsiString):integer;
 
 type LogLevel=(DEBUG, INFO, WARNING, ERROR, CRITICAL);
 const StrLogLevel: array[DEBUG..CRITICAL] of String = ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL');
@@ -111,7 +113,7 @@ function IsAdminLoggedOn: Boolean;
 function ProcessExists(ExeFileName: string): boolean;
 function KillTask(ExeFileName: string): integer;
 function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:integer=5):boolean;
-function GetIPFromHost(const HostName: string): string;
+function GetIPFromHost(const HostName: ansistring): ansistring;
 
 function RunTask(cmd: utf8string;var ExitStatus:integer;WorkingDir:utf8String=''): utf8string;
 
@@ -119,11 +121,11 @@ function GetSystemProductName: String;
 function GetSystemManufacturer: String;
 function GetBIOSVendor: String;
 function GetBIOSVersion: String;
-function GetBIOSDate:String;
+function GetBIOSDate:AnsiString;
 
-function GetServiceStatusByName(const AServer,AServiceName:string):TServiceState;
-function StartServiceByName(const AServer,AServiceName: String):Boolean;
-function StopServiceByName(const AServer, AServiceName: String):Boolean;
+function GetServiceStatusByName(const AServer,AServiceName:ansistring):TServiceState;
+function StartServiceByName(const AServer,AServiceName: AnsiString):Boolean;
+function StopServiceByName(const AServer, AServiceName: AnsiString):Boolean;
 
 var
   loghook : procedure(logmsg:String) of object;
@@ -134,7 +136,7 @@ const
 implementation
 
 uses registry,strutils,FileUtil,Process,zipper,
-    shlobj,winsock,JwaTlHelp32,jwalmwksta,jwalmapibuf,JwaWinBase,jwalmaccess,jwalmcons,jwalmerr,JwaWinNT,jwawinuser,IdURI;
+    shlobj,winsock,JwaTlHelp32,jwalmwksta,jwalmapibuf,JwaWinBase,jwalmaccess,jwalmcons,jwalmerr,JwaWinNT,jwawinuser,URIParser;
 
 function IsAdminLoggedOn: Boolean;
 { Returns True if the logged-on user is a member of the Administrators local
@@ -158,9 +160,9 @@ Function Wget(const fileURL, DestFileName: Utf8String; CBReceiver:TObject=Nil;pr
    total:DWORD;
    totalLen:DWORD;
    dwindex: cardinal;
-   dwcode : array[1..20] of char;
+   dwcode : array[1..20] of Ansichar;
    dwCodeLen : DWORD;
-   res : PChar;
+   res : PAnsiChar;
 
 begin
   result := false;
@@ -178,7 +180,7 @@ begin
       totalLen := SizeOf(totalLen);
       HttpQueryInfo(hURL, HTTP_QUERY_STATUS_CODE, @dwcode, dwcodeLen, dwIndex);
       HttpQueryInfo(hURL, HTTP_QUERY_CONTENT_LENGTH or HTTP_QUERY_FLAG_NUMBER, @total,totalLen, dwIndex);
-      res := pchar(@dwcode);
+      res := pansichar(@dwcode);
       if (res ='200') or (res ='302') then
       begin
         Size:=0;
@@ -230,10 +232,10 @@ function wget_try(const fileURL: Utf8String;enableProxy:Boolean= False): boolean
    BufferLen: DWORD;
    sAppName: Utf8string;
    dwindex: cardinal;
-   dwcode : array[1..20] of char;
+   dwcode : array[1..20] of ansichar;
    dwCodeLen : DWORD;
    dwNumber: DWORD;
-   res : PChar;
+   res : PAnsiChar;
 
 begin
   result := false;
@@ -250,7 +252,7 @@ begin
       dwIndex  := 0;
       dwCodeLen := 10;
       HttpQueryInfo(hURL, HTTP_QUERY_STATUS_CODE, @dwcode, dwcodeLen, dwIndex);
-      res := pchar(@dwcode);
+      res := pansichar(@dwcode);
       dwNumber := sizeof(Buffer)-1;
       result :=  (res ='200') or (res ='302');
     finally
@@ -263,18 +265,18 @@ end;
 
 
 // récupère une chaine de caractères en http en utilisant l'API windows
-function httpGetString(url: string; enableProxy:Boolean= False;
-   ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000):Utf8String;
+function httpGetString(url: ansistring; enableProxy:Boolean= False;
+   ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000):RawByteString;
 var
   hInet,hFile,hConnect: HINTERNET;
   buffer: array[1..1024] of byte;
   flags,bytesRead,dwError,port : DWORD;
   pos:integer;
   dwindex,dwcodelen,dwread,dwNumber: cardinal;
-  dwcode : array[1..20] of char;
-  res    : pchar;
-  doc,error: String;
-  uri :TIdURI;
+  dwcode : array[1..20] of ansichar;
+  res    : PAnsiChar;
+  doc,error: AnsiString;
+  uri :TURI;
 
 begin
   result := '';
@@ -289,38 +291,29 @@ begin
     InternetSetOption(hInet,INTERNET_OPTION_CONNECT_TIMEOUT,@ConnectTimeout,sizeof(integer));
     InternetSetOption(hInet,INTERNET_OPTION_SEND_TIMEOUT,@SendTimeOut,sizeof(integer));
     InternetSetOption(hInet,INTERNET_OPTION_RECEIVE_TIMEOUT,@ReceiveTimeOut,sizeof(integer));
-    uri := TIdURI.Create(url);
-    BEGIN
-      if uri.Port<>'' then
-        port := StrToInt(uri.Port)
-      else
-        if (uri.Protocol='https') then
-          port := INTERNET_DEFAULT_HTTPS_PORT
-        else
-          port := INTERNET_DEFAULT_HTTP_PORT;
+    uri := ParseURI(url,'http',80);
 
-      hConnect := InternetConnect(hInet, PChar(uri.Host), port, nil, nil, INTERNET_SERVICE_HTTP, 0, 0);
-      if not Assigned(hConnect) then
-        Raise Exception.Create('Unable to connect to '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')');
-      flags := INTERNET_FLAG_NO_CACHE_WRITE or INTERNET_FLAG_PRAGMA_NOCACHE or INTERNET_FLAG_RELOAD;
-      if uri.Protocol='https' then
-        flags := flags or INTERNET_FLAG_SECURE;
-      doc := uri.Path+uri.document;
-      if uri.params<>'' then
-        doc:= doc+'?'+uri.Params;
-      hFile := HttpOpenRequest(hConnect, 'GET', PChar(doc), HTTP_VERSION, nil, nil,flags , 0);
-      if not Assigned(hFile) then
-        Raise Exception.Create('Unable to get doc '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')');
+    hConnect := InternetConnect(hInet, PAnsiChar(uri.Host), uri.port, nil, nil, INTERNET_SERVICE_HTTP, 0, 0);
+    if not Assigned(hConnect) then
+      Raise Exception.Create('Unable to connect to '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')');
+    flags := INTERNET_FLAG_NO_CACHE_WRITE or INTERNET_FLAG_PRAGMA_NOCACHE or INTERNET_FLAG_RELOAD;
+    if uri.Protocol='https' then
+      flags := flags or INTERNET_FLAG_SECURE;
+    doc := uri.Path+uri.document;
+    if uri.params<>'' then
+      doc:= doc+'?'+uri.Params;
+    hFile := HttpOpenRequest(hConnect, 'GET', PAnsiChar(doc), HTTP_VERSION, nil, nil,flags , 0);
+    if not Assigned(hFile) then
+      Raise Exception.Create('Unable to get doc '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')');
 
-      if not HttpSendRequest(hFile, nil, 0, nil, 0) then
+    if not HttpSendRequest(hFile, nil, 0, nil, 0) then
+    begin
+      ErrorCode:=GetLastError;
+      if (ErrorCode = ERROR_INTERNET_INVALID_CA) then
       begin
-        ErrorCode:=GetLastError;
-        if (ErrorCode = ERROR_INTERNET_INVALID_CA) then
-        begin
-          SetToIgnoreCerticateErrors(hFile, url);
-          if not HttpSendRequest(hFile, nil, 0, nil, 0) then
-            Raise Exception.Create('Unable to send request to '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')');
-        end;
+        SetToIgnoreCerticateErrors(hFile, url);
+        if not HttpSendRequest(hFile, nil, 0, nil, 0) then
+          Raise Exception.Create('Unable to send request to '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')');
       end;
     end;
 
@@ -330,7 +323,7 @@ begin
       dwCodeLen := 10;
       if HttpQueryInfo(hFile, HTTP_QUERY_STATUS_CODE, @dwcode, dwcodeLen, dwIndex) then
       begin
-        res := pchar(@dwcode);
+        res := pansichar(@dwcode);
         dwNumber := sizeof(Buffer)-1;
         if (res ='200') or (res ='302') then
         begin
@@ -339,7 +332,7 @@ begin
           repeat
             FillChar(buffer,SizeOf(buffer),0);
             InternetReadFile(hFile,@buffer,SizeOf(buffer),bytesRead);
-            SetLength(Result,Length(result)+bytesRead+1);
+            SetLength(Result,Length(result)+bytesRead);
             Move(Buffer,Result[pos],bytesRead);
             inc(pos,bytesRead);
           until bytesRead = 0;
@@ -357,7 +350,6 @@ begin
        raise Exception.Create('Unable to download: "'+URL+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')');
 
   finally
-    uri.Free;
     if Assigned(hConnect) then
       InternetCloseHandle(hConnect);
     if Assigned(hInet) then
@@ -365,12 +357,12 @@ begin
   end;
 end;
 
-function GetWinInetError(ErrorCode:Cardinal): string;
+function GetWinInetError(ErrorCode:Cardinal): ansistring;
 const
    winetdll = 'wininet.dll';
 var
   Len: Integer;
-  Buffer: PChar;
+  Buffer: PAnsiChar;
 begin
   Len := FormatMessage(
   FORMAT_MESSAGE_FROM_HMODULE or FORMAT_MESSAGE_FROM_SYSTEM or
@@ -384,7 +376,7 @@ begin
   end;
 end;
 
-function SetToIgnoreCerticateErrors(oRequestHandle:HINTERNET; var aErrorMsg: string): Boolean;
+function SetToIgnoreCerticateErrors(oRequestHandle:HINTERNET; var aErrorMsg: ansistring): Boolean;
 var
   vDWFlags: DWord;
   vDWFlagsLen: DWord;
@@ -410,21 +402,21 @@ begin
   end;
 end;
 
-function httpPostData(const UserAgent: string; const url: string; const Data: AnsiString; enableProxy:Boolean= False;
-   ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000):Utf8String;
+function httpPostData(const UserAgent: Ansistring; const url: Ansistring; const Data: RawByteString; enableProxy:Boolean= False;
+   ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000):RawByteString;
 var
   hInet: HINTERNET;
   hHTTP: HINTERNET;
   hReq: HINTERNET;
-  uri:TIdURI;
-  pdata:String;
+  uri:TURI;
+  pdata:AnsiString;
 
   buffer: array[1..1024] of byte;
-  flags,bytesRead,dwError,port : DWORD;
+  flags,bytesRead,dwError : DWORD;
   pos:integer;
   dwindex,dwcodelen,dwread,dwNumber: cardinal;
-  dwcode : array[1..20] of char;
-  res    : pchar;
+  dwcode : array[1..20] of Ansichar;
+  res    : PAnsiChar;
 
   timeout:integer;
 //  doc,error: String;
@@ -436,64 +428,60 @@ const
   accept: packed array[0..1] of LPWSTR = (@wall, nil);
   header: string = 'Content-Type: application/json';
 begin
-  uri := TIdUri.Create(url);
+  uri := ParseURI(url,'http',80);
+  if enableProxy then
+     hInet := InternetOpen(PAnsiChar(UserAgent),INTERNET_OPEN_TYPE_PRECONFIG,nil,nil,0)
+  else
+     hInet := InternetOpen(PAnsiChar(UserAgent),INTERNET_OPEN_TYPE_DIRECT,nil,nil,0);
   try
-    if enableProxy then
-       hInet := InternetOpen(PChar(UserAgent),INTERNET_OPEN_TYPE_PRECONFIG,nil,nil,0)
-    else
-       hInet := InternetOpen(PChar(UserAgent),INTERNET_OPEN_TYPE_DIRECT,nil,nil,0);
+    InternetSetOption(hInet,INTERNET_OPTION_CONNECT_TIMEOUT,@ConnectTimeout,sizeof(integer));
+    InternetSetOption(hInet,INTERNET_OPTION_SEND_TIMEOUT,@SendTimeOut,sizeof(integer));
+    InternetSetOption(hInet,INTERNET_OPTION_RECEIVE_TIMEOUT,@ReceiveTimeOut,sizeof(integer));
+
+    hHTTP := InternetConnect(hInet, PAnsiChar(uri.Host), uri.Port, PAnsiCHAR(uri.Username),PAnsiCHAR(uri.Password), INTERNET_SERVICE_HTTP, 0, 1);
+    if hHTTP =Nil then
+        Raise Exception.Create('Unable to connect to '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
     try
-      InternetSetOption(hInet,INTERNET_OPTION_CONNECT_TIMEOUT,@ConnectTimeout,sizeof(integer));
-      InternetSetOption(hInet,INTERNET_OPTION_SEND_TIMEOUT,@SendTimeOut,sizeof(integer));
-      InternetSetOption(hInet,INTERNET_OPTION_RECEIVE_TIMEOUT,@ReceiveTimeOut,sizeof(integer));
-
-      hHTTP := InternetConnect(hInet, PChar(uri.Host), StrtoInt(uri.Port), PCHAR(uri.Username),PCHAR(uri.Password), INTERNET_SERVICE_HTTP, 0, 1);
-      if hHTTP =Nil then
-          Raise Exception.Create('Unable to connect to '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
+      hReq := HttpOpenRequest(hHTTP, PAnsiChar('POST'), PAnsiChar(uri.Document), nil, nil, @accept, 0, 1);
+      if hReq=Nil then
+          Raise Exception.Create('Unable to POST to: '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
       try
-        hReq := HttpOpenRequest(hHTTP, PChar('POST'), PChar(uri.Document), nil, nil, @accept, 0, 1);
-        if hReq=Nil then
-            Raise Exception.Create('Unable to POST to: '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
-        try
-          pdata := Data;
-          if not HttpSendRequest(hReq, PChar(header), length(header), PChar(pdata), length(pdata)) then
-             Raise Exception.Create('Unable to send data to: '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
+        pdata := Data;
+        if not HttpSendRequest(hReq, PAnsiChar(header), length(header), PAnsiChar(pdata), length(pdata)) then
+           Raise Exception.Create('Unable to send data to: '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
 
-          dwIndex  := 0;
-          dwCodeLen := 10;
-          if HttpQueryInfo(hReq, HTTP_QUERY_STATUS_CODE, @dwcode, dwcodeLen, dwIndex) then
+        dwIndex  := 0;
+        dwCodeLen := 10;
+        if HttpQueryInfo(hReq, HTTP_QUERY_STATUS_CODE, @dwcode, dwcodeLen, dwIndex) then
+        begin
+          res := pAnsichar(@dwcode);
+          dwNumber := sizeof(Buffer)-1;
+          if (res ='200') or (res ='302') then
           begin
-            res := pchar(@dwcode);
-            dwNumber := sizeof(Buffer)-1;
-            if (res ='200') or (res ='302') then
-            begin
-              Result:='';
-              pos:=1;
-              repeat
-                FillChar(buffer,SizeOf(buffer),0);
-                InternetReadFile(hReq,@buffer,SizeOf(buffer),bytesRead);
-                SetLength(Result,Length(result)+bytesRead+1);
-                Move(Buffer,Result[pos],bytesRead);
-                inc(pos,bytesRead);
-              until bytesRead = 0;
-            end
-            else
-               raise Exception.Create('Unable to get return data for: '+URL+' HTTP Status: '+res);
+            Result:='';
+            pos:=1;
+            repeat
+              FillChar(buffer,SizeOf(buffer),0);
+              InternetReadFile(hReq,@buffer,SizeOf(buffer),bytesRead);
+              SetLength(Result,Length(result)+bytesRead);
+              Move(Buffer,Result[pos],bytesRead);
+              inc(pos,bytesRead);
+            until bytesRead = 0;
           end
           else
-              Raise Exception.Create('Unable to get http status for: '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
+             raise Exception.Create('Unable to get return data for: '+URL+' HTTP Status: '+res);
+        end
+        else
+            Raise Exception.Create('Unable to get http status for: '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
 
-        finally
-          InternetCloseHandle(hReq);
-        end;
       finally
-        InternetCloseHandle(hHTTP);
+        InternetCloseHandle(hReq);
       end;
     finally
-      InternetCloseHandle(hInet);
+      InternetCloseHandle(hHTTP);
     end;
   finally
-    uri.Free;
+    InternetCloseHandle(hInet);
   end;
 end;
 
@@ -575,15 +563,13 @@ begin
   end;
 end;
 
-function GetBIOSDate: String;
+function GetBIOSDate: AnsiString;
 const
   WinNT_REG_PATH = 'HARDWARE\DESCRIPTION\System';
   WinNT_REG_KEY  = 'SystemBiosDate';
   Win9x_REG_PATH = 'Enum\Root\*PNP0C01\0000';
   Win9x_REG_KEY  = 'BiosDate';
 var
-  RegStr: string;
-  RegSeparator: Char;
   R:TRegistry;
 begin
   Result := '';
@@ -671,17 +657,17 @@ begin
       SystemPath:=SystemPath+APath;
       if RightStr(SystemPath,1)<>';' then SystemPath:=SystemPath+';';
       WriteExpandString('Path',SystemPath);
-      SendMessageTimeout(HWND_BROADCAST,WM_SETTINGCHANGE,0,Longint(PChar('Environment')),0,1000,aresult);
+      SendMessageTimeout(HWND_BROADCAST,WM_SETTINGCHANGE,0,Longint(PAnsiChar('Environment')),0,1000,aresult);
     end;
   finally
     Free;
   end;
 end;
 
-procedure UpdateCurrentApplication(fromURL:String;restart:Boolean;restartparam:Utf8String);
+procedure UpdateCurrentApplication(fromURL:String;restart:Boolean;restartparam:String);
 var
   bat: TextFile;
-  tempdir,tempfn,updateBatch,fn,zipfn,version,destdir : Utf8String;
+  tempdir,tempfn,updateBatch,fn,zipfn,version,destdir : String;
   files:TStringList;
   UnZipper: TUnZipper;
   i:integer;
@@ -756,9 +742,9 @@ begin
       ShellExecute(
         0,
         'open',
-        PChar( SysUtils.GetEnvironmentVariable('ComSpec')),
-        PChar('/C '+ updatebatch),
-        PChar(TempDir),
+        PAnsiChar( SysUtils.GetEnvironmentVariable('ComSpec')),
+        PAnsiChar('/C '+ updatebatch),
+        PAnsiChar(TempDir),
         SW_HIDE);
       ExitProcess(0);
     end;
@@ -786,10 +772,10 @@ begin
 end;
 
 
-procedure UpdateApplication(fromURL:String;SetupExename,SetupParams,ExeName,RestartParam:Utf8String);
+procedure UpdateApplication(fromURL:String;SetupExename,SetupParams,ExeName,RestartParam:String);
 var
   bat: TextFile;
-  tempdir,tempfn,updateBatch,zipfn,version : Utf8String;
+  tempdir,tempfn,updateBatch,zipfn,version : String;
   files:TStringList;
   UnZipper: TUnZipper;
   i:integer;
@@ -858,9 +844,9 @@ begin
       ShellExecute(
         0,
         'open',
-        PChar( SysUtils.GetEnvironmentVariable('ComSpec')),
-        PChar('/C '+ updatebatch),
-        PChar(TempDir),
+        PAnsiChar( SysUtils.GetEnvironmentVariable('ComSpec')),
+        PAnsiChar('/C '+ updatebatch),
+        PAnsiChar(TempDir),
         SW_HIDE);
       ExitProcess(0);
     end;
@@ -873,7 +859,7 @@ end;
 
 function GetUserName : AnsiString;
 var
-	 pcUser   : PChar;
+	 pcUser   : PAnsiChar;
 	 dwUSize : DWORD;
 begin
 	 dwUSize := 21; // user name can be up to 20 characters
@@ -898,7 +884,7 @@ begin
     end;
 end;
 
-function GetUserDomainName(const CurUser: string): AnsiString;
+function GetUserDomainName(const CurUser: Ansistring): AnsiString;
 var
   Count1, Count2: DWORD;
   Sd: PSID; // PSecurityDescriptor; // FPC requires PSID
@@ -909,11 +895,11 @@ begin
   Sd := nil;
   Snu := SIDTypeUser;
   Result := '';
-  LookUpAccountName(nil, PChar(CurUser), Sd, Count1, PChar(Result), Count2, Snu);
+  LookupAccountName(nil, PAnsiChar(CurUser), Sd, Count1, PAnsiChar(Result), Count2, Snu);
   SetLength(Result, Count2 + 1);
   Sd := AllocMem(Count1);
   try
-    if LookUpAccountName(nil, PChar(CurUser), Sd, Count1, PChar(Result), Count2, Snu) then
+    if LookUpAccountName(nil, PAnsiChar(CurUser), Sd, Count1, PAnsiChar(Result), Count2, Snu) then
       StrResetLength(Result)
     else
       Result := EmptyStr;
@@ -937,9 +923,9 @@ end;
 function GetDomainName: AnsiString;
 var
   hProcess, hAccessToken: THandle;
-  InfoBuffer: PChar;
-  AccountName: array [0..UNLEN] of Char;
-  DomainName: array [0..UNLEN] of Char;
+  InfoBuffer: PAnsiChar;
+  AccountName: array [0..UNLEN] of AnsiChar;
+  DomainName: array [0..UNLEN] of AnsiChar;
 
   InfoBufferSize: Cardinal;
   AccountSize: Cardinal;
@@ -982,9 +968,9 @@ var
 begin
   SetLength( Result, MAX_PATH );
   if ForceFolder then
-    SHGetFolderPath( 0, csidl or CSIDL_FLAG_CREATE, 0, 0, PChar( Result ))
+    SHGetFolderPath( 0, csidl or CSIDL_FLAG_CREATE, 0, 0, PAnsiChar( Result ))
   else
-    SHGetFolderPath( 0, csidl, 0, 0, PChar( Result ));
+    SHGetFolderPath( 0, csidl, 0, 0, PAnsiChar( Result ));
 
   i := Pos( #0, Result );
   if i > 0 then SetLength( Result, Pred(i));
@@ -1045,7 +1031,7 @@ end;
 
 function GetCurrentUser: AnsiString;
 var
-  charBuffer: array[0..128] of Char;
+  charBuffer: array[0..128] of AnsiChar;
   strnBuffer: AnsiString;
   intgBufferSize: DWORD;
 begin
@@ -1072,9 +1058,9 @@ begin
   Result:=IncludeTrailingPathDelimiter(dir)+GetApplicationName+'.ini';
 end;
 
-function SortableVersion(VersionString: String): String;
+function SortableVersion(VersionString: AnsiString): AnsiString;
 var
-  version,tok : String;
+  version,tok : AnsiString;
 begin
   version := VersionString;
   tok := StrToken(version,'.');
@@ -1086,6 +1072,24 @@ begin
       Result := Result+tok;
     tok := StrToken(version,'.');
   until tok='';
+end;
+
+function CompareVersion(v1,v2:AnsiString):integer;
+var
+  tok1,tok2:AnsiString;
+begin
+  repeat
+    tok1 := StrToken(v1,'.');
+    tok2 := StrToken(v2,'.');
+    if (tok1<>'') or (tok2<>'') then
+    try
+      result := StrToInt(tok1)-StrToInt(tok2);
+    except
+      result := CompareStr(tok1,tok2);
+    end;
+    if (result<>0) or (tok1='') or (tok2='') then
+      break;
+  until (result<>0) or (tok1='') or (tok2='');
 end;
 
 procedure Logger(Msg: String;level:LogLevel=WARNING);
@@ -1102,7 +1106,7 @@ end;
 
 function GetComputerName : AnsiString;
 var
-  buffer: array[0..255] of char;
+  buffer: array[0..255] of ansichar;
   size: dword;
 begin
   size := 256;
@@ -1153,13 +1157,13 @@ begin
 	 begin
 			GetMem( pTemp, dwVersionSize );
 			try
-				 if GetFileVersionInfo( PChar( FileName ),             // pointer to filename string
+				 if GetFileVersionInfo( PAnsiChar( FileName ),             // pointer to filename string
 																dwHandle,                      // ignored
 																dwVersionSize,                 // size of buffer
 																pTemp ) then                   // pointer to buffer to receive file-version info.
 
 						if VerQueryValue( pTemp,                           // pBlock     - address of buffer for version resource
-															PChar( strSubBlock ),            // lpSubBlock - address of value to retrieve
+															PAnsiChar( strSubBlock ),            // lpSubBlock - address of value to retrieve
 															pData,                           // lplpBuffer - address of buffer for version pointer
 															dwVersionSize ) then             // puLen      - address of version-value length buffer
 							 with PFixedFileInfo( pData )^ do
@@ -1256,7 +1260,7 @@ begin
   end;
 end;
 
-function GetIPFromHost(const HostName: string): string;
+function GetIPFromHost(const HostName: ansistring): ansistring;
 type
   TaPInAddr = array[0..10] of PInAddr;
   PaPInAddr = ^TaPInAddr;
@@ -1268,7 +1272,7 @@ var
 begin
   WSAStartup($101, GInitData);
   Result := '';
-  phe := GetHostByName(PChar(HostName));
+  phe := gethostbyname(PAnsiChar(HostName));
   if phe = nil then Exit;
   pPtr := PaPInAddr(phe^.h_addr_list);
   i := 0;
@@ -1327,7 +1331,7 @@ end;
 
 
 // From JCL library
-function GetServiceStatusByName(const AServer,AServiceName:string):TServiceState;
+function GetServiceStatusByName(const AServer,AServiceName:ansistring):TServiceState;
 var
   ServiceHandle,
   SCMHandle: DWORD;
@@ -1339,10 +1343,10 @@ begin
   SCMAccess:=SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE or SC_MANAGER_QUERY_LOCK_STATUS;
   Access:=SERVICE_INTERROGATE or GENERIC_READ;
 
-  SCMHandle:= OpenSCManager(PChar(AServer), Nil, SCMAccess);
+  SCMHandle:= OpenSCManager(PAnsiChar(AServer), Nil, SCMAccess);
   if SCMHandle <> 0 then
   try
-    ServiceHandle:=OpenService(SCMHandle,PChar(AServiceName),Access);
+    ServiceHandle:=OpenService(SCMHandle,PAnsiChar(AServiceName),Access);
     if ServiceHandle <> 0 then
     try
       ResetMemory(ServiceStatus, SizeOf(ServiceStatus));
@@ -1356,19 +1360,19 @@ begin
   end;
 end;
 
-function StartServiceByName(const AServer,AServiceName: String):Boolean;
+function StartServiceByName(const AServer,AServiceName: AnsiString):Boolean;
 var
   ServiceHandle,
   SCMHandle: DWORD;
-  p: PChar;
+  p: PAnsiChar;
 begin
   p:=nil;
   Result:=False;
 
-  SCMHandle:= OpenSCManager(PChar(AServer), nil, SC_MANAGER_ALL_ACCESS);
+  SCMHandle:= OpenSCManager(PAnsiChar(AServer), nil, SC_MANAGER_ALL_ACCESS);
   if SCMHandle <> 0 then
   try
-    ServiceHandle:=OpenService(SCMHandle,PChar(AServiceName),SERVICE_ALL_ACCESS);
+    ServiceHandle:=OpenService(SCMHandle,PAnsiChar(AServiceName),SERVICE_ALL_ACCESS);
     if ServiceHandle <> 0 then
       Result:=StartService(ServiceHandle,0,p);
 
@@ -1378,7 +1382,7 @@ begin
   end;
 end;
 
-function StopServiceByName(const AServer, AServiceName: String):Boolean;
+function StopServiceByName(const AServer, AServiceName: AnsiString):Boolean;
 var
   ServiceHandle,
   SCMHandle: DWORD;
@@ -1386,10 +1390,10 @@ var
 begin
   Result := False;
 
-  SCMHandle := OpenSCManager(PChar(AServer), nil, SC_MANAGER_ALL_ACCESS);
+  SCMHandle := OpenSCManager(PAnsiChar(AServer), nil, SC_MANAGER_ALL_ACCESS);
   if SCMHandle <> 0 then
   try
-    ServiceHandle := OpenService(SCMHandle, PChar(AServiceName), SERVICE_ALL_ACCESS);
+    ServiceHandle := OpenService(SCMHandle, PAnsiChar(AServiceName), SERVICE_ALL_ACCESS);
     if ServiceHandle <> 0 then
     begin
       ResetMemory(SS, SizeOf(SS));
@@ -1425,11 +1429,11 @@ begin
   end;
 end;
 
-function UserLogin(user,password,domain:String):THandle;
+function UserLogin(user,password,domain:AnsiString):THandle;
 var
   htok:THandle;
 begin
-  if not LogonUser(pchar(user),pchar(domain),pchar(password),LOGON32_LOGON_NETWORK,LOGON32_PROVIDER_DEFAULT,htok) then
+  if not LogonUser(pAnsichar(user),pansichar(domain),pansichar(password),LOGON32_LOGON_NETWORK,LOGON32_PROVIDER_DEFAULT,htok) then
     raise EXCEPTION.Create('Unable to login as '+user+' on domain '+domain);
   result := htok;
 end;
@@ -1439,7 +1443,7 @@ begin
   Result := GetCurrentUserSid='S-1-5-18';
 end;
 
-function UserDomain(htoken:THandle):String;
+function UserDomain(htoken:THandle):AnsiString;
 var
   cbBuf: Cardinal;
   ptiUser: PTOKEN_USER;
@@ -1447,7 +1451,7 @@ var
   ProcessHandle: THandle;
   UserSize, DomainSize: DWORD;
   bSuccess: Boolean;
-  user,domain:String;
+  user,domain:AnsiString;
 begin
   Result := '';
   bSuccess := GetTokenInformation(hToken, TokenUser, nil, 0, cbBuf);
@@ -1470,11 +1474,11 @@ begin
   begin
     SetLength(User, UserSize);
     SetLength(Domain, DomainSize);
-    if LookupAccountSid(nil, ptiUser^.User.Sid, PChar(User), UserSize,
-      PChar(Domain), DomainSize, snu) then
+    if LookupAccountSid(nil, ptiUser^.User.Sid, PAnsiChar(User), UserSize,
+      PAnsiChar(Domain), DomainSize, snu) then
     begin
-      User := StrPas(PChar(User));
-      Domain := StrPas(PChar(Domain));
+      User := StrPas(PAnsiChar(User));
+      Domain := StrPas(PAnsiChar(Domain));
       Result := Domain;
     end;
   end;
@@ -1486,7 +1490,7 @@ begin
 end;
 
 // From http://www.swissdelphicenter.ch/torry/showcode.php?id=2095
-function ConvertSid(Sid: PSID; pszSidText: PChar; var dwBufferLen: DWORD): BOOL;
+function ConvertSid(Sid: PSID; pszSidText: PAnsiChar; var dwBufferLen: DWORD): BOOL;
 var
   psia: PSIDIdentifierAuthority;
   dwSubAuthorities: DWORD;
@@ -1540,7 +1544,7 @@ begin
   Result := True;
 end;
 
-function ObtainTextSid(hToken: THandle; pszSid: PChar;
+function ObtainTextSid(hToken: THandle; pszSid: PAnsiChar;
   var dwBufferLen: DWORD): BOOL;
 var
   dwReturnLength: DWORD;
@@ -1579,12 +1583,12 @@ begin
 
 end;
 
-function GetCurrentUserSid: string;
+function GetCurrentUserSid: Ansistring;
 var
   hAccessToken: THandle;
   bSuccess: BOOL;
   dwBufferLen: DWORD;
-  szSid: array[0..260] of Char;
+  szSid: array[0..260] of AnsiChar;
 begin
   Result := '';
 

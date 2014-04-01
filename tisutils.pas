@@ -43,7 +43,7 @@ function ISOFinSem(ADate:TDateTime):TDateTime;
 
 implementation
 
-uses FileUtil,IdHTTP,tisdatetime,tisstrings;
+uses FileUtil,tisdatetime,tisstrings;
 
 function GetCmdParams(ID:String;Default:String=''):String;
 var
@@ -72,7 +72,6 @@ end;
 function httpGetString(
     url: string): String;
 var
-  http:TIdHTTP;
   f:TFileStream;
   ARes:String;
 begin

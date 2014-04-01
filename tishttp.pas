@@ -16,7 +16,7 @@ function GetWinInetError(ErrorCode:Cardinal): string;
 
 
 implementation
-uses FileUtil,JwaWinBase,jwalmaccess,jwalmcons,jwalmerr,JwaWinNT,jwawinuser,IdURI;
+uses FileUtil,JwaWinBase,jwalmaccess,jwalmcons,jwalmerr,JwaWinNT,jwawinuser,URIParser;
 
 
 // récupère une chaine de caractères en http en utilisant l'API windows

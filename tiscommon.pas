@@ -26,6 +26,9 @@ unit tiscommon;
 {$mode delphiunicode}
 {$codepage UTF8}
 
+{.$mode delphi}
+{.$H+}
+
 interface
 
 uses
@@ -37,17 +40,17 @@ Function  Wget(const fileURL, DestFileName: Utf8String; CBReceiver:TObject=Nil;p
 Function  Wget_try(const fileURL: Utf8String;enableProxy:Boolean=False): boolean;
 
 function httpGetString(url: ansistring; enableProxy:Boolean= False;
-    ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000):RawByteString;
+    ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString=''):RawByteString;
 function httpPostData(const UserAgent: ansistring; const url: Ansistring; const Data: RawByteString; enableProxy:Boolean= False;
-   ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000):RawByteString;
+   ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString=''):RawByteString;
 function SetToIgnoreCerticateErrors(oRequestHandle:HINTERNET; var aErrorMsg: ansistring): Boolean;
 function GetWinInetError(ErrorCode:Cardinal): ansistring;
 Procedure UnzipFile(ZipFilePath,OutputPath:Utf8String);
 Procedure AddToUserPath(APath:Utf8String);
 procedure AddToSystemPath(APath:Utf8String);
 
-procedure UpdateCurrentApplication(fromURL:String;Restart:Boolean;restartparam:String);
-procedure UpdateApplication(fromURL:String;SetupExename,SetupParams,ExeName,RestartParam:String);
+procedure UpdateCurrentApplication(fromURL:AnsiString;Restart:Boolean;restartparam:AnsiString);
+procedure UpdateApplication(fromURL:AnsiString;SetupExename,SetupParams,ExeName,RestartParam:AnsiString);
 
 function  GetApplicationVersion(FileName:Utf8String=''): Utf8String;
 
@@ -108,11 +111,15 @@ type
 const
   ssPendingStates = [ssStartPending, ssStopPending, ssContinuePending, ssPausePending];
 
+type
+    HTTPException=Class(Exception)
+    end;
+
 function UserInGroup(Group :DWORD) : Boolean;
 function IsAdminLoggedOn: Boolean;
 function ProcessExists(ExeFileName: string): boolean;
 function KillTask(ExeFileName: string): integer;
-function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:integer=5):boolean;
+function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:LongInt=5000):boolean;
 function GetIPFromHost(const HostName: ansistring): ansistring;
 
 function RunTask(cmd: utf8string;var ExitStatus:integer;WorkingDir:utf8String=''): utf8string;
@@ -136,7 +143,8 @@ const
 implementation
 
 uses registry,strutils,FileUtil,Process,zipper,
-    shlobj,winsock,JwaTlHelp32,jwalmwksta,jwalmapibuf,JwaWinBase,jwalmaccess,jwalmcons,jwalmerr,JwaWinNT,jwawinuser,URIParser;
+    shlobj,winsock2,JwaTlHelp32,jwalmwksta,jwalmapibuf,JwaWinBase,
+    jwalmaccess,jwalmcons,jwalmerr,JwaWinNT,jwawinuser,URIParser;
 
 function IsAdminLoggedOn: Boolean;
 { Returns True if the logged-on user is a member of the Administrators local
@@ -198,7 +206,7 @@ begin
                   if not progressCallback(CBReceiver,size,total) then
                   begin
                     BufferLen:=0;
-                    raise Exception.Create('Download stopped by user');
+                    raise HTTPException.Create('Download stopped by user');
                   end;
               end;
             until BufferLen = 0;
@@ -214,7 +222,7 @@ begin
         result := (Size>0);
       end
       else
-        raise Exception.Create('Unable to download: "'+fileURL+'", HTTP Status:'+res);
+        raise HTTPException.Create('Unable to download: "'+fileURL+'", HTTP Status:'+res);
     finally
       InternetCloseHandle(hURL)
     end
@@ -266,7 +274,7 @@ end;
 
 // récupère une chaine de caractères en http en utilisant l'API windows
 function httpGetString(url: ansistring; enableProxy:Boolean= False;
-   ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000):RawByteString;
+   ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString=''):RawByteString;
 var
   hInet,hFile,hConnect: HINTERNET;
   buffer: array[1..1024] of byte;
@@ -277,6 +285,7 @@ var
   res    : PAnsiChar;
   doc,error: AnsiString;
   uri :TURI;
+  puser,ppassword:PAnsiChar;
 
 begin
   result := '';
@@ -293,10 +302,24 @@ begin
     InternetSetOption(hInet,INTERNET_OPTION_RECEIVE_TIMEOUT,@ReceiveTimeOut,sizeof(integer));
     uri := ParseURI(url,'http',80);
 
-    hConnect := InternetConnect(hInet, PAnsiChar(uri.Host), uri.port, nil, nil, INTERNET_SERVICE_HTTP, 0, 0);
+    if uri.Username<>'' then
+      puser:= PAnsiChar(uri.Username)
+    else
+       puser := Nil;
+    if uri.Password<>'' then
+      ppassword:=PAnsiChar(uri.Password)
+    else
+      ppassword:=Nil;
+
+    if user<>'' then
+      puser:=PAnsiChar(user);
+    if password<>'' then
+      ppassword:=PAnsiChar(password);
+
+    hConnect := InternetConnect(hInet, PAnsiChar(uri.Host), uri.port, puser, ppassword, INTERNET_SERVICE_HTTP, 0, 0);
     if not Assigned(hConnect) then
       Raise Exception.Create('Unable to connect to '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')');
-    flags := INTERNET_FLAG_NO_CACHE_WRITE or INTERNET_FLAG_PRAGMA_NOCACHE or INTERNET_FLAG_RELOAD;
+    flags := INTERNET_FLAG_DONT_CACHE or INTERNET_FLAG_NO_CACHE_WRITE or INTERNET_FLAG_PRAGMA_NOCACHE or INTERNET_FLAG_RELOAD or INTERNET_FLAG_KEEP_CONNECTION;
     if uri.Protocol='https' then
       flags := flags or INTERNET_FLAG_SECURE;
     doc := uri.Path+uri.document;
@@ -304,7 +327,7 @@ begin
       doc:= doc+'?'+uri.Params;
     hFile := HttpOpenRequest(hConnect, 'GET', PAnsiChar(doc), HTTP_VERSION, nil, nil,flags , 0);
     if not Assigned(hFile) then
-      Raise Exception.Create('Unable to get doc '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')');
+      Raise HTTPException.Create('Unable to get doc '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')');
 
     if not HttpSendRequest(hFile, nil, 0, nil, 0) then
     begin
@@ -313,7 +336,7 @@ begin
       begin
         SetToIgnoreCerticateErrors(hFile, url);
         if not HttpSendRequest(hFile, nil, 0, nil, 0) then
-          Raise Exception.Create('Unable to send request to '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')');
+          Raise HTTPException.Create('Unable to send request to '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')');
       end;
     end;
 
@@ -338,16 +361,19 @@ begin
           until bytesRead = 0;
         end
         else
-           raise Exception.Create('Unable to download: '+URL+' HTTP Status: '+res);
+          if res='401' then
+            raise HTTPException.Create('Not authorized: '+URL+' HTTP Status: '+res)
+          else
+            raise HTTPException.Create('Unable to download: '+URL+' HTTP Status: '+res);
       end
       else
-         raise Exception.Create('Unable to download: '+URL+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')');
+         raise HTTPException.Create('Unable to download: '+URL+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')');
     finally
       if Assigned(hFile) then
         InternetCloseHandle(hFile);
     end
     else
-       raise Exception.Create('Unable to download: "'+URL+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')');
+       raise HTTPException.Create('Unable to download: "'+URL+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')');
 
   finally
     if Assigned(hConnect) then
@@ -385,7 +411,6 @@ begin
   try
     vDWFlagsLen := SizeOf(vDWFlags);
     if not InternetQueryOption(oRequestHandle, INTERNET_OPTION_SECURITY_FLAGS, @vDWFlags, vDWFlagsLen) then begin
-      ShowMessage(IntToStr(GetLastError()));
       aErrorMsg := 'Internal error in SetToIgnoreCerticateErrors when trying to get wininet flags.' + GetWininetError(GetLastError);
       Exit;
     end;
@@ -403,7 +428,7 @@ begin
 end;
 
 function httpPostData(const UserAgent: Ansistring; const url: Ansistring; const Data: RawByteString; enableProxy:Boolean= False;
-   ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000):RawByteString;
+   ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString=''):RawByteString;
 var
   hInet: HINTERNET;
   hHTTP: HINTERNET;
@@ -419,14 +444,13 @@ var
   res    : PAnsiChar;
 
   timeout:integer;
-//  doc,error: String;
-//  uri :TIdURI;
-
+  puser,ppassword:PAnsiChar;
 
 const
   wall : WideString = '*/*';
   accept: packed array[0..1] of LPWSTR = (@wall, nil);
   header: string = 'Content-Type: application/json';
+
 begin
   uri := ParseURI(url,'http',80);
   if enableProxy then
@@ -438,17 +462,35 @@ begin
     InternetSetOption(hInet,INTERNET_OPTION_SEND_TIMEOUT,@SendTimeOut,sizeof(integer));
     InternetSetOption(hInet,INTERNET_OPTION_RECEIVE_TIMEOUT,@ReceiveTimeOut,sizeof(integer));
 
-    hHTTP := InternetConnect(hInet, PAnsiChar(uri.Host), uri.Port, PAnsiCHAR(uri.Username),PAnsiCHAR(uri.Password), INTERNET_SERVICE_HTTP, 0, 1);
+    if uri.Username<>'' then
+      puser:= PAnsiChar(uri.Username)
+    else
+       puser := Nil;
+    if uri.Password<>'' then
+      ppassword:=PAnsiChar(uri.Password)
+    else
+      ppassword:=Nil;
+
+    if user<>'' then
+      puser:=PAnsiChar(user);
+    if password<>'' then
+      ppassword:=PAnsiChar(password);
+
+    hHTTP := InternetConnect(hInet, PAnsiChar(uri.Host), uri.Port, puser,ppassword, INTERNET_SERVICE_HTTP, 0, 0);
     if hHTTP =Nil then
-        Raise Exception.Create('Unable to connect to '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
+        Raise HTTPException.Create('Unable to connect to '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
     try
-      hReq := HttpOpenRequest(hHTTP, PAnsiChar('POST'), PAnsiChar(uri.Document), nil, nil, @accept, 0, 1);
+      flags := INTERNET_FLAG_NO_CACHE_WRITE or INTERNET_FLAG_PRAGMA_NOCACHE or INTERNET_FLAG_RELOAD or INTERNET_FLAG_KEEP_CONNECTION;
+      if uri.Protocol='https' then
+        flags := flags or INTERNET_FLAG_SECURE;
+
+      hReq := HttpOpenRequest(hHTTP, PAnsiChar('POST'), PAnsiChar(uri.Document), nil, nil, @accept, flags, 1);
       if hReq=Nil then
-          Raise Exception.Create('Unable to POST to: '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
+          Raise HTTPException.Create('Unable to POST to: '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
       try
         pdata := Data;
         if not HttpSendRequest(hReq, PAnsiChar(header), length(header), PAnsiChar(pdata), length(pdata)) then
-           Raise Exception.Create('Unable to send data to: '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
+           Raise HTTPException.Create('Unable to send data to: '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
 
         dwIndex  := 0;
         dwCodeLen := 10;
@@ -469,10 +511,10 @@ begin
             until bytesRead = 0;
           end
           else
-             raise Exception.Create('Unable to get return data for: '+URL+' HTTP Status: '+res);
+             raise HTTPException.Create('Unable to get return data for: '+URL+' HTTP Status: '+res);
         end
         else
-            Raise Exception.Create('Unable to get http status for: '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
+            Raise HTTPException.Create('Unable to get http status for: '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
 
       finally
         InternetCloseHandle(hReq);
@@ -664,13 +706,14 @@ begin
   end;
 end;
 
-procedure UpdateCurrentApplication(fromURL:String;restart:Boolean;restartparam:String);
+procedure UpdateCurrentApplication(fromURL:AnsiString;restart:Boolean;restartparam:AnsiString);
 var
   bat: TextFile;
-  tempdir,tempfn,updateBatch,fn,zipfn,version,destdir : String;
+  tempdir,tempfn,updateBatch,fn,zipfn,version,destdir : AnsiString;
   files:TStringList;
   UnZipper: TUnZipper;
   i:integer;
+  hinstance:Integer;
 begin
   Files := TStringList.Create;
   try
@@ -691,8 +734,8 @@ begin
       Files.Add(fn);
     except
       //trying to get a zip file instead (exe files blocked by proxy ...)
-      zipfn:= AppendPathDelim(tempdir)+ChangeFileExt(fn,'.zip');
-      wget(ChangeFileExt(fromURL,'.zip'),zipfn);
+      zipfn:= AppendPathDelim(tempdir)+ChangeFileExt(fn,ansistring('.zip'));
+      wget(ChangeFileExt(fromURL,ansistring('.zip')),zipfn);
       Logger('  unzipping file '+zipfn);
       UnZipper := TUnZipper.Create;
       try
@@ -739,14 +782,20 @@ begin
         CloseFile(bat)
       end;
       Logger(' Launching update batch file '+updateBatch);
-      ShellExecute(
+      hinstance := ShellExecute(
         0,
-        'open',
+        PAnsiChar('open'),
         PAnsiChar( SysUtils.GetEnvironmentVariable('ComSpec')),
-        PAnsiChar('/C '+ updatebatch),
+        PAnsiChar(AnsiString('/C '+updatebatch)),
         PAnsiChar(TempDir),
         SW_HIDE);
-      ExitProcess(0);
+      if hinstance<=32 then
+      begin
+        writeln('Error launching update batch file :'+IntToStr(hinstance));
+        ExitProcess(1);
+      end
+      else
+        ExitProcess(0)
     end;
 
   finally
@@ -772,13 +821,13 @@ begin
 end;
 
 
-procedure UpdateApplication(fromURL:String;SetupExename,SetupParams,ExeName,RestartParam:String);
+procedure UpdateApplication(fromURL:AnsiString;SetupExename,SetupParams,ExeName,RestartParam:AnsiString);
 var
   bat: TextFile;
-  tempdir,tempfn,updateBatch,zipfn,version : String;
+  tempdir,tempfn,updateBatch,zipfn,version : AnsiString;
   files:TStringList;
   UnZipper: TUnZipper;
-  i:integer;
+  i,hinstance:integer;
 begin
   Files := TStringList.Create;
   try
@@ -799,8 +848,8 @@ begin
       Files.Add(SetupExename);
     except
       //trying to get a zip file instead (exe files blocked by proxy ...)
-      zipfn:= AppendPathDelim(tempdir)+ChangeFileExt(SetupExename,'.zip');
-      wget(ChangeFileExt(fromURL,'.zip'),zipfn,Nil,Nil,True);
+      zipfn:= AppendPathDelim(tempdir)+ChangeFileExt(SetupExename,ansistring('.zip'));
+      wget(ChangeFileExt(fromURL,ansistring('.zip')),zipfn,Nil,Nil,True);
       Logger('  unzipping file '+zipfn);
       UnZipper := TUnZipper.Create;
       try
@@ -824,7 +873,7 @@ begin
     if FileExists(tempfn) and (FileSize(tempfn)>0) then
     begin
       // small batch to replace current running application
-      updatebatch := AppendPathDelim(tempdir) + 'update.bat';
+      updatebatch := AppendPathDelim(tempdir) + AnsiString('update.bat');
       AssignFile(bat,updateBatch);
       Rewrite(bat);
       try
@@ -841,14 +890,20 @@ begin
         CloseFile(bat)
       end;
       Logger(' Launching update batch file '+updateBatch);
-      ShellExecute(
+      hinstance := ShellExecute(
         0,
-        'open',
-        PAnsiChar( SysUtils.GetEnvironmentVariable('ComSpec')),
-        PAnsiChar('/C '+ updatebatch),
+        PAnsiChar('open'),
+        PAnsiChar( SysUtils.GetEnvironmentVariable(AnsiString('ComSpec'))),
+        PAnsiChar(AnsiString('/C '+ updatebatch)),
         PAnsiChar(TempDir),
         SW_HIDE);
-      ExitProcess(0);
+      if hinstance<=32 then
+      begin
+        writeln('Error launching update batch file :'+IntToStr(hinstance));
+        ExitProcess(1);
+      end
+      else
+        ExitProcess(0)
     end;
 
   finally
@@ -1050,7 +1105,7 @@ end;
 // to store use specific settings for this application
 function Appuserinipath:AnsiString;
 var
-  dir : String;
+  dir : AnsiString;
 begin
   dir := IncludeTrailingPathDelimiter(GetAppdataFolder)+'tisapps';
   if not DirectoryExists(dir) then
@@ -1237,8 +1292,50 @@ begin
  CloseHandle(FSnapshotHandle);
 end;
 
+
+// from http://sourceforge.net/p/pascalscada/code/HEAD/tree/trunk/src/scada/sockets_w32_w64.pas#l79
+function connect_with_timeout(sock:Tsocket; address:TSockAddr; address_len:integer; timeout:LongInt):LongInt;
+var
+  sel:TFDSet;
+  mode:u_long;
+  tv : TTimeVal;
+  p:ptimeval;
+begin
+
+  if timeout=-1 then
+    p:=nil
+  else begin
+    tv.tv_Sec:=Timeout div 1000;
+    tv.tv_Usec:=(Timeout mod 1000)*1000;
+    p:=@tv;
+  end;
+
+  Result:=0;
+
+  if connect(sock, address, address_len) <> 0 then begin
+    if WSAGetLastError=WSAEWOULDBLOCK then begin
+      FD_ZERO(sel);
+      FD_SET(sock, sel);
+      mode := select(sock, nil, @sel, nil, p);
+
+      if (mode < 0) then begin
+        Result := -1;
+      end else begin
+        if (mode > 0) then begin
+          Result := 0;
+        end else begin
+          if (mode = 0) then begin
+            Result := -2;
+          end;
+        end;
+      end;
+    end else
+      Result := -1;
+  end;
+end;
+
 // from http://theroadtodelphi.wordpress.com/2010/02/21/checking-if-a-tcp-port-is-open-using-delphi-and-winsocks/
-function PortTCP_IsOpen(dwPort : Word; ipAddressStr:AnsiString) : boolean;
+function PortTCP_IsOpen(dwPort : Word; ipAddressStr:AnsiString;timeout:LongInt=1000) : boolean;
 var
   client : sockaddr_in;
   sock   : Integer;
@@ -1254,7 +1351,7 @@ begin
     client.sin_port        := htons(dwPort); //convert to TCP/IP network byte order (big-endian)
     client.sin_addr.s_addr := inet_addr(PAnsiChar(ipAddressStr));  //convert to IN_ADDR  structure
     sock  :=socket(AF_INET, SOCK_STREAM, 0);    //creates a socket
-    Result:=connect(sock,client,SizeOf(client))=0;  //establishes a connection to a specified socket
+    Result:=connect_with_timeout(sock,client,SizeOf(client),timeout)=0;  //establishes a connection to a specified socket
   finally
     WSACleanup;
   end;
@@ -1308,16 +1405,12 @@ begin
 end;
 
 
-function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:integer=5):boolean;
+function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:LongInt=5000):boolean;
 var
-  St:TDateTime;
   ip:String;
 begin
   ip := GetIPFromHost(ipAddressStr);
-  St := Now;
-  While not PortTCP_IsOpen(dwPort,ip) and (Now-St<timeout/24/3600) do
-    Sleep(1000);
-  Result:=PortTCP_IsOpen(dwPort,ip);
+  result := PortTCP_IsOpen(dwPort,ip,timeout);
 end;
 
 procedure ResetMemory(out P; Size: Longint);

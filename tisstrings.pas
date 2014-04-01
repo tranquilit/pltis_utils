@@ -161,6 +161,8 @@ function StrPrefixIndex(const S: string; const Prefixes: array of string): SizeI
 function StrSearch(const Substr, S: string; const Index: SizeInt = 1): SizeInt;
 function StrSuffixIndex(const S: string; const Suffixes: array of string): SizeInt;
 
+// add a string to a list
+procedure StrAppend(var AList: TDynStringArray;const S: string);
 
 // String Transformation Routines
 function StrCenter(const S: string; L: SizeInt; C: Char = ' '): string;
@@ -625,6 +627,13 @@ function StrIsOneOf(const S: string; const List: array of string): Boolean;
 begin
   Result := StrIndex(S, List) > -1;
 end;
+
+procedure StrAppend(var AList: TDynStringArray;const S: string);
+begin
+  SetLength(AList,Length(AList)+1);
+  AList[High(Alist)] := S;
+end;
+
 
 function StrISuffixIndex(const S: string; const Suffixes: array of string): SizeInt;
 var

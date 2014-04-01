@@ -7,8 +7,7 @@ unit pltis_utils;
 interface
 
 uses
-  tisutils, tisdatetime, tishttp, tisstrings, tisinifiles, tiscommon, 
-  LazarusPackageIntf;
+  tisutils, tisdatetime, tisstrings, tisinifiles, tiscommon, LazarusPackageIntf;
 
 implementation
 

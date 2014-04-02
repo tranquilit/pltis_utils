@@ -119,7 +119,7 @@ function UserInGroup(Group :DWORD) : Boolean;
 function IsAdminLoggedOn: Boolean;
 function ProcessExists(ExeFileName: string): boolean;
 function KillTask(ExeFileName: string): integer;
-function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:LongInt=5000):boolean;
+function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:integer=5):boolean;
 function GetIPFromHost(const HostName: ansistring): ansistring;
 
 function RunTask(cmd: utf8string;var ExitStatus:integer;WorkingDir:utf8String=''): utf8string;
@@ -1300,6 +1300,7 @@ var
   mode:u_long;
   tv : TTimeVal;
   p:ptimeval;
+  err:AnsiString;
 begin
 
   if timeout=-1 then
@@ -1311,8 +1312,10 @@ begin
   end;
 
   Result:=0;
-
-  if connect(sock, address, address_len) <> 0 then begin
+  if connect(sock, address, address_len) <> SOCKET_ERROR then
+  try
+    err := 'lasterr '+inttostr(WSAGetLastError);
+    OutputDebugString(pansichar(err));
     if WSAGetLastError=WSAEWOULDBLOCK then begin
       FD_ZERO(sel);
       FD_SET(sock, sel);
@@ -1331,11 +1334,12 @@ begin
       end;
     end else
       Result := -1;
+  finally
   end;
 end;
 
 // from http://theroadtodelphi.wordpress.com/2010/02/21/checking-if-a-tcp-port-is-open-using-delphi-and-winsocks/
-function PortTCP_IsOpen(dwPort : Word; ipAddressStr:AnsiString;timeout:LongInt=1000) : boolean;
+function PortTCP_IsOpen(dwPort : Word; ipAddressStr:AnsiString) : boolean;
 var
   client : sockaddr_in;
   sock   : Integer;
@@ -1343,6 +1347,7 @@ var
   ret    : Integer;
   wsdata : WSAData;
 begin
+ sock := 0;
  Result:=False;
  ret := WSAStartup($0002, wsdata); //initiates use of the Winsock DLL
   if ret<>0 then exit;
@@ -1351,8 +1356,9 @@ begin
     client.sin_port        := htons(dwPort); //convert to TCP/IP network byte order (big-endian)
     client.sin_addr.s_addr := inet_addr(PAnsiChar(ipAddressStr));  //convert to IN_ADDR  structure
     sock  :=socket(AF_INET, SOCK_STREAM, 0);    //creates a socket
-    Result:=connect_with_timeout(sock,client,SizeOf(client),timeout)=0;  //establishes a connection to a specified socket
+    Result:=connect(sock,client,SizeOf(client))=0;  //establishes a connection to a specified socket
   finally
+    closesocket(sock);
     WSACleanup;
   end;
 end;
@@ -1405,12 +1411,19 @@ begin
 end;
 
 
-function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:LongInt=5000):boolean;
+function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:integer=5):boolean;
 var
+  St:TDateTime;
   ip:String;
 begin
   ip := GetIPFromHost(ipAddressStr);
-  result := PortTCP_IsOpen(dwPort,ip,timeout);
+  St := Now;
+  Result:=PortTCP_IsOpen(dwPort,ip);
+  While not result and (Now-St<timeout/24/3600) do
+  begin
+    Sleep(500);
+    result := PortTCP_IsOpen(dwPort,ip);
+  end;
 end;
 
 procedure ResetMemory(out P; Size: Longint);

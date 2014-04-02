@@ -119,7 +119,7 @@ function UserInGroup(Group :DWORD) : Boolean;
 function IsAdminLoggedOn: Boolean;
 function ProcessExists(ExeFileName: string): boolean;
 function KillTask(ExeFileName: string): integer;
-function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:integer=5):boolean;
+function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:integer=5000):boolean;
 function GetIPFromHost(const HostName: ansistring): ansistring;
 
 function RunTask(cmd: utf8string;var ExitStatus:integer;WorkingDir:utf8String=''): utf8string;
@@ -1411,7 +1411,7 @@ begin
 end;
 
 
-function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:integer=5):boolean;
+function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:integer=5000):boolean;
 var
   St:TDateTime;
   ip:String;
@@ -1419,9 +1419,9 @@ begin
   ip := GetIPFromHost(ipAddressStr);
   St := Now;
   Result:=PortTCP_IsOpen(dwPort,ip);
-  While not result and (Now-St<timeout/24/3600) do
+  While not result and ((Now-St)*1000<timeout/24/3600) do
   begin
-    Sleep(500);
+    Sleep(1000);
     result := PortTCP_IsOpen(dwPort,ip);
   end;
 end;

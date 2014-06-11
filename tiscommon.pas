@@ -112,7 +112,12 @@ const
   ssPendingStates = [ssStartPending, ssStopPending, ssContinuePending, ssPausePending];
 
 type
+
+    { HTTPException }
+
     HTTPException=Class(Exception)
+      HTTPStatus: Integer;
+      constructor Create(const msg: string;AHTTPStatus:Integer);
     end;
 
 function UserInGroup(Group :DWORD) : Boolean;
@@ -206,7 +211,7 @@ begin
                   if not progressCallback(CBReceiver,size,total) then
                   begin
                     BufferLen:=0;
-                    raise HTTPException.Create('Download stopped by user');
+                    raise HTTPException.Create('Download stopped by user',0);
                   end;
               end;
             until BufferLen = 0;
@@ -222,7 +227,7 @@ begin
         result := (Size>0);
       end
       else
-        raise HTTPException.Create('Unable to download: "'+fileURL+'", HTTP Status:'+res);
+        raise HTTPException.Create('Unable to download: "'+fileURL+'", HTTP Status:'+res, int(res^));
     finally
       InternetCloseHandle(hURL)
     end
@@ -318,7 +323,7 @@ begin
 
     hConnect := InternetConnect(hInet, PAnsiChar(uri.Host), uri.port, puser, ppassword, INTERNET_SERVICE_HTTP, 0, 0);
     if not Assigned(hConnect) then
-      Raise Exception.Create('Unable to connect to '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')');
+      Raise HTTPException.Create('Unable to connect to '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')',0);
     flags := INTERNET_FLAG_DONT_CACHE or INTERNET_FLAG_NO_CACHE_WRITE or INTERNET_FLAG_PRAGMA_NOCACHE or INTERNET_FLAG_RELOAD or INTERNET_FLAG_KEEP_CONNECTION;
     if uri.Protocol='https' then
       flags := flags or INTERNET_FLAG_SECURE;
@@ -327,7 +332,7 @@ begin
       doc:= doc+'?'+uri.Params;
     hFile := HttpOpenRequest(hConnect, 'GET', PAnsiChar(doc), HTTP_VERSION, nil, nil,flags , 0);
     if not Assigned(hFile) then
-      Raise HTTPException.Create('Unable to get doc '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')');
+      Raise HTTPException.Create('Unable to get doc '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')',0);
 
     if not HttpSendRequest(hFile, nil, 0, nil, 0) then
     begin
@@ -336,7 +341,7 @@ begin
       begin
         SetToIgnoreCerticateErrors(hFile, url);
         if not HttpSendRequest(hFile, nil, 0, nil, 0) then
-          Raise HTTPException.Create('Unable to send request to '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')');
+          Raise HTTPException.Create('Unable to send request to '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')',0);
       end;
     end;
 
@@ -362,18 +367,18 @@ begin
         end
         else
           if res='401' then
-            raise HTTPException.Create('Not authorized: '+URL+' HTTP Status: '+res)
+            raise HTTPException.Create('Not authorized: '+URL+' HTTP Status: '+res,int(res^))
           else
-            raise HTTPException.Create('Unable to download: '+URL+' HTTP Status: '+res);
+            raise HTTPException.Create('Unable to download: '+URL+' HTTP Status: '+res,int(res^));
       end
       else
-         raise HTTPException.Create('Unable to download: '+URL+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')');
+         raise HTTPException.Create('Unable to download: '+URL+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')',0);
     finally
       if Assigned(hFile) then
         InternetCloseHandle(hFile);
     end
     else
-       raise HTTPException.Create('Unable to download: "'+URL+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')');
+       raise HTTPException.Create('Unable to download: "'+URL+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')',0);
 
   finally
     if Assigned(hConnect) then
@@ -478,7 +483,7 @@ begin
 
     hHTTP := InternetConnect(hInet, PAnsiChar(uri.Host), uri.Port, puser,ppassword, INTERNET_SERVICE_HTTP, 0, 0);
     if hHTTP =Nil then
-        Raise HTTPException.Create('Unable to connect to '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
+        Raise HTTPException.Create('Unable to connect to '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')',0);
     try
       flags := INTERNET_FLAG_NO_CACHE_WRITE or INTERNET_FLAG_PRAGMA_NOCACHE or INTERNET_FLAG_RELOAD or INTERNET_FLAG_KEEP_CONNECTION;
       if uri.Protocol='https' then
@@ -486,11 +491,11 @@ begin
 
       hReq := HttpOpenRequest(hHTTP, PAnsiChar('POST'), PAnsiChar(uri.Document), nil, nil, @accept, flags, 1);
       if hReq=Nil then
-          Raise HTTPException.Create('Unable to POST to: '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
+          Raise HTTPException.Create('Unable to POST to: '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')',0);
       try
         pdata := Data;
         if not HttpSendRequest(hReq, PAnsiChar(header), length(header), PAnsiChar(pdata), length(pdata)) then
-           Raise HTTPException.Create('Unable to send data to: '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
+           Raise HTTPException.Create('Unable to send data to: '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')',0);
 
         dwIndex  := 0;
         dwCodeLen := 10;
@@ -511,10 +516,10 @@ begin
             until bytesRead = 0;
           end
           else
-             raise HTTPException.Create('Unable to get return data for: '+URL+' HTTP Status: '+res);
+             raise HTTPException.Create('Unable to get return data for: '+URL+' HTTP Status: '+res,int(res^));
         end
         else
-            Raise HTTPException.Create('Unable to get http status for: '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
+            Raise HTTPException.Create('Unable to get http status for: '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')',0);
 
       finally
         InternetCloseHandle(hReq);
@@ -1715,6 +1720,14 @@ begin
       Result := szSid;
     CloseHandle(hAccessToken);
   end;
+end;
+
+{ HTTPException }
+
+constructor HTTPException.Create(const msg: string; AHTTPStatus: Integer);
+begin
+  inherited Create(msg);
+  HTTPStatus:=AHTTPStatus;
 end;
 
 

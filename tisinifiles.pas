@@ -47,6 +47,8 @@ procedure IniWriteString(const FileName, Section, Line, Value: string);         
 
 procedure IniDeleteKey(const FileName, Section, Line: string);
 
+function IniHasKey(const FileName, Section, Line: string):Boolean;
+
 // Initialization (ini) Files helper routines
 procedure IniReadStrings(IniFile: TCustomIniFile; const Section: string; Strings: TStrings);
 procedure IniWriteStrings(IniFile: TCustomIniFile; const Section: string; Strings: TStrings);
@@ -142,6 +144,18 @@ end;
 // Initialization (ini) Files helper routines
 const
   ItemCountName = 'Count';
+
+function IniHasKey(const FileName, Section, Line: string): Boolean;
+var
+  Ini: TIniFile;
+begin
+  Ini := TIniFile.Create(FileName);
+  try
+    Result := Ini.ValueExists(Section,Line);
+  finally
+    Ini.Free;
+  end;
+end;
 
 procedure IniReadStrings(IniFile: TCustomIniFile; const Section: string; Strings: TStrings);
 var

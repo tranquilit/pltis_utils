@@ -31,7 +31,7 @@ var
   dwcode : array[1..20] of char;
   res    : pchar;
   doc,error: String;
-  uri :TIdURI;
+  uri :TURI;
 
 begin
   result := '';
@@ -46,15 +46,8 @@ begin
     InternetSetOption(hInet,INTERNET_OPTION_CONNECT_TIMEOUT,@ConnectTimeout,sizeof(integer));
     InternetSetOption(hInet,INTERNET_OPTION_SEND_TIMEOUT,@SendTimeOut,sizeof(integer));
     InternetSetOption(hInet,INTERNET_OPTION_RECEIVE_TIMEOUT,@ReceiveTimeOut,sizeof(integer));
-    uri := TIdURI.Create(url);
+    uri := ParseURI(url,'http',80);
     BEGIN
-      if uri.Port<>'' then
-        port := StrToInt(uri.Port)
-      else
-        if (uri.Protocol='https') then
-          port := INTERNET_DEFAULT_HTTPS_PORT
-        else
-          port := INTERNET_DEFAULT_HTTP_PORT;
 
       hConnect := InternetConnect(hInet, PChar(uri.Host), port, nil, nil, INTERNET_SERVICE_HTTP, 0, 0);
       if not Assigned(hConnect) then
@@ -114,7 +107,6 @@ begin
        raise Exception.Create('Unable to download: "'+URL+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')');
 
   finally
-    uri.Free;
     if Assigned(hConnect) then
       InternetCloseHandle(hConnect);
     if Assigned(hInet) then
@@ -173,7 +165,7 @@ var
   hInet: HINTERNET;
   hHTTP: HINTERNET;
   hReq: HINTERNET;
-  uri:TIdURI;
+  uri:TURI;
   pdata:String;
 
   buffer: array[1..1024] of byte;
@@ -193,7 +185,7 @@ const
   accept: packed array[0..1] of LPWSTR = (@wall, nil);
   header: string = 'Content-Type: application/json';
 begin
-  uri := TIdUri.Create(url);
+  uri := ParseURI(url);
   try
     if enableProxy then
        hInet := InternetOpen(PChar(UserAgent),INTERNET_OPEN_TYPE_PRECONFIG,nil,nil,0)
@@ -205,12 +197,11 @@ begin
       InternetSetOption(hInet,INTERNET_OPTION_RECEIVE_TIMEOUT,@ReceiveTimeOut,sizeof(integer));
 
       ShowMessage(uri.host);
-      hHTTP := InternetConnect(hInet, PChar(uri.Host), StrtoInt(uri.Port), PCHAR(uri.Username),PCHAR(uri.Password), INTERNET_SERVICE_HTTP, 0, 0);
+      hHTTP := InternetConnect(hInet, PChar(uri.Host), uri.Port, PCHAR(uri.Username),PCHAR(uri.Password), INTERNET_SERVICE_HTTP, 0, 0);
       if hHTTP =Nil then
           Raise Exception.Create('Unable to connect to '+url+' code : '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
       try
-        ShowMessage(uri.GetPathAndParams);
-        hReq := HttpOpenRequest(hHTTP, PChar(httpMethod), PChar(uri.GetPathAndParams), nil, nil, @accept, 0, 0);
+        hReq := HttpOpenRequest(hHTTP, PChar(httpMethod), pchar(url), nil, nil, @accept, 0, 0);
         if hReq=Nil then
             Raise Exception.Create('Unable to '+httpMethod+' to '+url+' code : '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')');
         try
@@ -252,7 +243,6 @@ begin
       InternetCloseHandle(hInet);
     end;
   finally
-    uri.Free;
   end;
 end;
 

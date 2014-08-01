@@ -285,8 +285,8 @@ function CharLower(const C: Char): Char; {$IFDEF SUPPORTS_INLINE} inline; {$ENDI
 function CharUpper(const C: Char): Char; {$IFDEF SUPPORTS_INLINE} inline; {$ENDIF}
 function CharToggleCase(const C: Char): Char;
 
-function Split(St: AnsiString; Sep: AnsiString): TDynStringArray;
-//function Join(Sep: String; StrArray : TDynStringArray): String;
+function StrSplit(St: AnsiString; Sep: AnsiString): TDynStringArray;
+function StrJoin(Sep: String; StrArray : TDynStringArray): String;
 
 
 implementation
@@ -2137,7 +2137,7 @@ begin
     Result := nil;
 end;
 
-function Split(St: AnsiString; Sep: AnsiString): TDynStringArray;
+function StrSplit(St: AnsiString; Sep: AnsiString): TDynStringArray;
 var
   tok : AnsiString;
   len : integer;
@@ -2155,7 +2155,7 @@ begin
   until St='';
 end;
 
-function Join(Sep: String; StrArray: TDynStringArray): String;
+function StrJoin(Sep: String; StrArray: TDynStringArray): String;
 var
   i:integer;
 begin

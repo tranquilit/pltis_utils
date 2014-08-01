@@ -139,6 +139,9 @@ function GetServiceStatusByName(const AServer,AServiceName:ansistring):TServiceS
 function StartServiceByName(const AServer,AServiceName: AnsiString):Boolean;
 function StopServiceByName(const AServer, AServiceName: AnsiString):Boolean;
 
+
+function MakePath(const parts:array of String):String;
+
 var
   loghook : procedure(logmsg:String) of object;
 
@@ -150,6 +153,20 @@ implementation
 uses registry,strutils,FileUtil,Process,zipper,
     shlobj,winsock2,JwaTlHelp32,jwalmwksta,jwalmapibuf,JwaWinBase,
     jwalmaccess,jwalmcons,jwalmerr,JwaWinNT,jwawinuser,URIParser;
+
+
+function MakePath(const parts:array of String):String;
+var
+  i:integer;
+begin
+  result := '';
+  for i:=low(parts) to high(parts) do
+  begin
+    result := Result+parts[i];
+    if (i<High(parts)) and (parts[i][length(parts[i])] <> PathDelim) then
+      result := result+PathDelim;
+  end;
+end;
 
 function IsAdminLoggedOn: Boolean;
 { Returns True if the logged-on user is a member of the Administrators local

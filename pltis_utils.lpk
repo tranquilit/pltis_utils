@@ -19,7 +19,7 @@
     </CompilerOptions>
     <Description Value="Various strings, datetime, etc routines"/>
     <Version Minor="2"/>
-    <Files Count="5">
+    <Files Count="6">
       <Item1>
         <Filename Value="tisutils.pas"/>
         <UnitName Value="tisutils"/>
@@ -40,15 +40,16 @@
         <Filename Value="tiscommon.pas"/>
         <UnitName Value="tiscommon"/>
       </Item5>
+      <Item6>
+        <Filename Value="tishttp.pas"/>
+        <UnitName Value="tishttp"/>
+      </Item6>
     </Files>
     <Type Value="RunAndDesignTime"/>
-    <RequiredPkgs Count="2">
+    <RequiredPkgs Count="1">
       <Item1>
-        <PackageName Value="LCL"/>
+        <PackageName Value="pl_indycomp"/>
       </Item1>
-      <Item2>
-        <PackageName Value="FCL"/>
-      </Item2>
     </RequiredPkgs>
     <UsageOptions>
       <UnitPath Value="$(PkgOutDir)"/>

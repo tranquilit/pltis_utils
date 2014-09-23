@@ -35,6 +35,7 @@ uses
   interfaces,Classes, SysUtils,tisstrings,windows,jwawintype, wininet, Dialogs;
 
 type TProgressCallback=function(Receiver:TObject;current,total:Integer):Boolean of object;
+type TLoginCallback = function(realm:String;var user,password:String):Boolean of object;
 
 Function  Wget(const fileURL, DestFileName: Utf8String; CBReceiver:TObject=Nil;progressCallback:TProgressCallback=Nil;enableProxy:Boolean=False): boolean;
 Function  Wget_try(const fileURL: Utf8String;enableProxy:Boolean=False): boolean;
@@ -323,6 +324,8 @@ begin
     InternetSetOption(hInet,INTERNET_OPTION_SEND_TIMEOUT,@SendTimeOut,sizeof(integer));
     InternetSetOption(hInet,INTERNET_OPTION_RECEIVE_TIMEOUT,@ReceiveTimeOut,sizeof(integer));
     uri := ParseURI(url,'http',80);
+    if (uri.Protocol = 'https') and (uri.port=80) then
+      uri.port := 443;
 
     if uri.Username<>'' then
       puser:= PAnsiChar(uri.Username)
@@ -456,7 +459,8 @@ var
   hHTTP: HINTERNET;
   hReq: HINTERNET;
   uri:TURI;
-  pdata:AnsiString;
+  pdata,
+  ErrorMsg:AnsiString;
 
   buffer: array[1..1024] of byte;
   flags,bytesRead,dwError : DWORD;
@@ -469,12 +473,14 @@ var
   puser,ppassword:PAnsiChar;
 
 const
-  wall : WideString = '*/*';
-  accept: packed array[0..1] of LPWSTR = (@wall, nil);
-  header: string = 'Content-Type: application/json';
+  wall : AnsiString = '*/*';
+  accept: packed array[0..1] of LPSTR = (@wall, nil);
+  header: AnsiString = 'Content-Type: application/json';
 
 begin
   uri := ParseURI(url,'http',80);
+  if (uri.Protocol = 'https') and (uri.port=80) then
+    uri.port := 443;
   if enableProxy then
      hInet := InternetOpen(PAnsiChar(UserAgent),INTERNET_OPEN_TYPE_PRECONFIG,nil,nil,0)
   else
@@ -506,14 +512,21 @@ begin
       if uri.Protocol='https' then
         flags := flags or INTERNET_FLAG_SECURE;
 
-      hReq := HttpOpenRequest(hHTTP, PAnsiChar('POST'), PAnsiChar(uri.Document), nil, nil, @accept, flags, 1);
+      hReq := HttpOpenRequestA(hHTTP, PAnsiChar('POST'), PAnsiChar(uri.Document), nil, nil, @accept, flags, 1);
       if hReq=Nil then
           Raise HTTPException.Create('Unable to POST to: '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')',0);
       try
         pdata := Data;
-        if not HttpSendRequest(hReq, PAnsiChar(header), length(header), PAnsiChar(pdata), length(pdata)) then
-           Raise HTTPException.Create('Unable to send data to: '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')',0);
-
+        if not HttpSendRequestA(hReq, PAnsiChar(header), length(header), PAnsiChar(pdata), length(pdata)) then
+        begin
+          ErrorCode:=GetLastError;
+          if (ErrorCode = ERROR_INTERNET_INVALID_CA) then
+          begin
+            SetToIgnoreCerticateErrors(hReq, ErrorMsg);
+            if not HttpSendRequestA(hReq, PAnsiChar(header), length(header), PAnsiChar(pdata), length(pdata))  then
+              Raise HTTPException.Create('Unable to send request to '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')',0);
+          end;
+        end;
         dwIndex  := 0;
         dwCodeLen := 10;
         if HttpQueryInfo(hReq, HTTP_QUERY_STATUS_CODE, @dwcode, dwcodeLen, dwIndex) then

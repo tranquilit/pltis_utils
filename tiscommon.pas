@@ -37,8 +37,9 @@ uses
 type TProgressCallback=function(Receiver:TObject;current,total:Integer):Boolean of object;
 type TLoginCallback = function(realm:String;var user,password:String):Boolean of object;
 
-Function  Wget(const fileURL, DestFileName: Utf8String; CBReceiver:TObject=Nil;progressCallback:TProgressCallback=Nil;enableProxy:Boolean=False): boolean;
-Function  Wget_try(const fileURL: Utf8String;enableProxy:Boolean=False): boolean;
+Function Wget(const fileURL, DestFileName: Utf8String; CBReceiver:TObject=Nil;progressCallback:TProgressCallback=Nil;enableProxy:Boolean=False): boolean;
+function wget_try(url: ansistring; enableProxy:Boolean= False;
+   ConnectTimeout:integer=4000;user:AnsiString='';password:AnsiString=''):Boolean;
 
 function httpGetString(url: ansistring; enableProxy:Boolean= False;
     ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString=''):RawByteString;
@@ -254,44 +255,83 @@ begin
   end
 end;
 
-function wget_try(const fileURL: Utf8String;enableProxy:Boolean= False): boolean;
- const
-   BufferSize = 1024;
- var
-   hSession, hURL: HInternet;
-   Buffer: array[1..BufferSize] of Byte;
-   BufferLen: DWORD;
-   sAppName: Utf8string;
-   dwindex: cardinal;
-   dwcode : array[1..20] of ansichar;
-   dwCodeLen : DWORD;
-   dwNumber: DWORD;
-   res : PAnsiChar;
+
+function wget_try(url: ansistring; enableProxy:Boolean= False;
+   ConnectTimeout:integer=4000;user:AnsiString='';password:AnsiString=''):Boolean;
+var
+  hInet,hFile,hConnect: HINTERNET;
+  buffer: array[1..1024] of byte;
+  flags,bytesRead,dwError,port : DWORD;
+  pos:integer;
+  dwindex,dwcodelen,dwread,dwNumber: cardinal;
+  dwcode : array[1..20] of ansichar;
+  res    : PAnsiChar;
+  doc,error: AnsiString;
+  uri :TURI;
+  puser,ppassword:PAnsiChar;
 
 begin
-  result := false;
-  sAppName := ExtractFileName(ParamStr(0)) ;
+  result := False;
+  hInet:=Nil;
+  hConnect := Nil;
+  hFile:=Nil;
   if enableProxy then
-    hSession := InternetOpenW(PWideChar(UTF8Decode(sAppName)), INTERNET_OPEN_TYPE_PRECONFIG, nil, nil, 0)
+     hInet := InternetOpen('wapt',INTERNET_OPEN_TYPE_PRECONFIG,nil,nil,0)
   else
-    hSession := InternetOpenW(PWideChar(UTF8Decode(sAppName)), INTERNET_OPEN_TYPE_DIRECT, nil, nil, 0);
-
+     hInet := InternetOpen('wapt',INTERNET_OPEN_TYPE_DIRECT,nil,nil,0);
   try
-    hURL := InternetOpenUrlW(hSession, PWideChar(UTF8Decode(fileURL)), nil, 0, INTERNET_FLAG_RELOAD+INTERNET_FLAG_PRAGMA_NOCACHE+INTERNET_FLAG_KEEP_CONNECTION , 0) ;
-    if assigned(hURL) then
-    try
-      dwIndex  := 0;
-      dwCodeLen := 10;
-      HttpQueryInfo(hURL, HTTP_QUERY_STATUS_CODE, @dwcode, dwcodeLen, dwIndex);
-      res := pansichar(@dwcode);
-      dwNumber := sizeof(Buffer)-1;
-      result :=  (res ='200') or (res ='302');
-    finally
-      InternetCloseHandle(hURL)
-    end
+    InternetSetOption(hInet,INTERNET_OPTION_CONNECT_TIMEOUT,@ConnectTimeout,sizeof(integer));
+    uri := ParseURI(url,'http',80);
+    if (uri.Protocol = 'https') and (uri.port=80) then
+      uri.port := 443;
+
+    if uri.Username<>'' then
+      puser:= PAnsiChar(uri.Username)
+    else
+       puser := Nil;
+    if uri.Password<>'' then
+      ppassword:=PAnsiChar(uri.Password)
+    else
+      ppassword:=Nil;
+
+    if user<>'' then
+      puser:=PAnsiChar(user);
+    if password<>'' then
+      ppassword:=PAnsiChar(password);
+
+    hConnect := InternetConnect(hInet, PAnsiChar(uri.Host), uri.port, puser, ppassword, INTERNET_SERVICE_HTTP, 0, 0);
+    if not Assigned(hConnect) then
+      Raise HTTPException.Create('Unable to connect to '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')',0);
+    flags := INTERNET_FLAG_DONT_CACHE or INTERNET_FLAG_NO_CACHE_WRITE or INTERNET_FLAG_PRAGMA_NOCACHE or INTERNET_FLAG_RELOAD or INTERNET_FLAG_KEEP_CONNECTION;
+    if uri.Protocol='https' then
+      flags := flags or INTERNET_FLAG_SECURE;
+    doc := uri.Path+uri.document;
+    if uri.params<>'' then
+      doc:= doc+'?'+uri.Params;
+    hFile := HttpOpenRequest(hConnect, 'GET', PAnsiChar(doc), HTTP_VERSION, nil, nil,flags , 0);
+    if not Assigned(hFile) then
+      Raise HTTPException.Create('Unable to get doc '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')',0);
+
+    if not HttpSendRequest(hFile, nil, 0, nil, 0) then
+    begin
+      ErrorCode:=GetLastError;
+      if (ErrorCode = ERROR_INTERNET_INVALID_CA) then
+      begin
+        SetToIgnoreCerticateErrors(hFile, error);
+        if not HttpSendRequest(hFile, nil, 0, nil, 0) then
+          Raise HTTPException.Create('Unable to send request to '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')',0);
+      end;
+    end;
+    Result := True;
+
   finally
-    InternetCloseHandle(hSession)
-  end
+    if Assigned(hFile) then
+      InternetCloseHandle(hFile);
+    if Assigned(hConnect) then
+      InternetCloseHandle(hConnect);
+    if Assigned(hInet) then
+      InternetCloseHandle(hInet);
+  end;
 end;
 
 
@@ -359,7 +399,7 @@ begin
       ErrorCode:=GetLastError;
       if (ErrorCode = ERROR_INTERNET_INVALID_CA) then
       begin
-        SetToIgnoreCerticateErrors(hFile, url);
+        SetToIgnoreCerticateErrors(hFile, error);
         if not HttpSendRequest(hFile, nil, 0, nil, 0) then
           Raise HTTPException.Create('Unable to send request to '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')',0);
       end;

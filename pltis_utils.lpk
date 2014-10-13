@@ -48,7 +48,7 @@
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="1">
       <Item1>
-        <PackageName Value="pl_indycomp"/>
+        <PackageName Value="LazUtils"/>
       </Item1>
     </RequiredPkgs>
     <UsageOptions>

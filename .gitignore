@@ -10,3 +10,4 @@ __history
 bin/*
 lib/*
 .svn
+/lib

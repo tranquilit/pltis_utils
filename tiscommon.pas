@@ -1100,7 +1100,7 @@ function StartServiceByName(const AServer,AServiceName: AnsiString):Boolean;
 var
   ServiceHandle,
   SCMHandle: DWORD;
-  p: PAnsiChar;
+  p: LPPCSTR;
 begin
   p:=nil;
   Result:=False;

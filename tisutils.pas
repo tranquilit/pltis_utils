@@ -19,15 +19,7 @@ function GetPersonalFolder:String;
 function GetAppdataFolder:String;
 function GetApplicationVersion(FileName:String=''):String;
 
-function httpGetString(url: string): String;
-function wget(const fileURL, DestFileName: String): boolean;
-
 function GetCmdParams(ID:String;Default:String=''):String;
-
-//Return the content of the file as a string.
-// url can be either a local file location ('p:\bin\jjj') or
-// a http url : 'http://mailhost.sermo.fr/ini/data/toto.txt'
-function httpget(url:String):String;
 
 //Create a Tmemorystream or a Tfilestream with the content of the result of http URL or file location
 // if the file exist (url is a local file location of type p:\bin\truc.jpg), then a filestream is created and returned in stream
@@ -43,7 +35,7 @@ function ISOFinSem(ADate:TDateTime):TDateTime;
 
 implementation
 
-uses FileUtil,tisdatetime,tisstrings;
+uses FileUtil,tisdatetime,tisstrings,tishttp;
 
 function GetCmdParams(ID:String;Default:String=''):String;
 var
@@ -69,44 +61,10 @@ begin
     Result:=Default;
 end;
 
-function httpGetString(
-    url: string): String;
-var
-  f:TFileStream;
-  ARes:String;
-begin
-  if not FileExists(URL) then
-  begin
-    Result:=httpGetString(url);
-    If (pos('<title>404 Not Found</title>',Result)>0) then
-      Raise Exception.Create('The resource at location : '+URL+' is empty or doesn''t exist or is unreachable');
-  end
-  else
-  begin
-    F:=TFileStream.Create(URL,fmOpenRead,fmShareDenyNone);
-    try
-      SetLength(ARes,F.Size);
-      F.Seek(0,soFromBeginning);
-      F.ReadBuffer(ARes[1],length(ARes));
-      Result:=ARes;
-    finally
-      F.Free;
-    end;
-  end;
-end;
-
-function wget(const fileURL, DestFileName: String): boolean;
-begin
-  result := false;
-  raise Exception.Create('to be done');
-end;
-
-
 function GetUserName : String;
 begin
   result := GetUserName;
 end;
-
 
 function GetApplicationName:String;
 begin
@@ -148,31 +106,10 @@ begin
   inherited Create('');
   St:=TStringList.Create;
   try
-    St.Text:=httpGet(URL);
+    St.Text:=httpGetString(URL);
     SetStrings(St);
   finally
     St.Free;
-  end;
-end;
-
-function httpget(url:String):String;
-var
-  f:TFileStream;
-  ARes:String;
-begin
-  if not FileExistsUTF8(URL) { *Converted from FileExists*  } then
-    Result:=httpGetString(url)
-  else
-  begin
-    F:=TFileStream.Create(URL,fmOpenRead,fmShareDenyNone);
-    try
-      SetLength(ARes,F.Size);
-      F.Seek(0,soFromBeginning);
-      F.ReadBuffer(ARes[1],length(ARes));
-      Result:=ARes;
-    finally
-      F.Free;
-    end;
   end;
 end;
 

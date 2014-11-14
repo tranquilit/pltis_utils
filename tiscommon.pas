@@ -68,7 +68,7 @@ function CompareVersion(v1,v2:AnsiString):integer;
 
 type LogLevel=(DEBUG, INFO, WARNING, ERROR, CRITICAL);
 const StrLogLevel: array[DEBUG..CRITICAL] of String = ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL');
-procedure Logger(Msg:String;level:LogLevel=WARNING);
+procedure Logger(Msg:AnsiString;level:LogLevel=WARNING);
 
 
 {Const
@@ -123,7 +123,7 @@ function StopServiceByName(const AServer, AServiceName: AnsiString):Boolean;
 function MakePath(const parts:array of String):String;
 
 var
-  loghook : procedure(logmsg:String) of object;
+  loghook : procedure(logmsg:AnsiString) of object;
 
 const
     currentLogLevel:LogLevel=WARNING;
@@ -737,7 +737,7 @@ function Appuserinipath:AnsiString;
 var
   dir : AnsiString;
 begin
-  dir := IncludeTrailingPathDelimiter(GetAppdataFolder)+'tisapps';
+  dir := IncludeTrailingPathDelimiter(GetAppdataFolder)+GetApplicationName;
   if not DirectoryExists(dir) then
     MkDir(dir);
   Result:=IncludeTrailingPathDelimiter(dir)+GetApplicationName+'.ini';
@@ -777,7 +777,7 @@ begin
   until (result<>0) or (tok1='') or (tok2='');
 end;
 
-procedure Logger(Msg: String;level:LogLevel=WARNING);
+procedure Logger(Msg: AnsiString;level:LogLevel=WARNING);
 begin
   if level>=currentLogLevel then
   begin
@@ -1044,7 +1044,7 @@ end;
 function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:integer=5000):boolean;
 var
   St:TDateTime;
-  ip:String;
+  ip:AnsiString;
 begin
   ip := GetIPFromHost(ipAddressStr);
   St := Now;

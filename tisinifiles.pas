@@ -38,9 +38,9 @@ uses
   SysUtils, Classes, IniFiles;
 
 // Initialization (ini) Files
-function IniReadBool(const FileName, Section, Line: string): Boolean;              // John C Molyneux
-function IniReadInteger(const FileName, Section, Line: string): Integer;           // John C Molyneux
-function IniReadString(const FileName, Section, Line: string): string;             // John C Molyneux
+function IniReadBool(const FileName, Section, Line: string;Default:Boolean=False): Boolean;              // John C Molyneux
+function IniReadInteger(const FileName, Section, Line: string;Default:Integer=0): Integer;           // John C Molyneux
+function IniReadString(const FileName, Section, Line: string;Default:String=''): string;             // John C Molyneux
 procedure IniWriteBool(const FileName, Section, Line: string; Value: Boolean);     // John C Molyneux
 procedure IniWriteInteger(const FileName, Section, Line: string; Value: Integer);  // John C Molyneux
 procedure IniWriteString(const FileName, Section, Line, Value: string);            // John C Molyneux
@@ -69,37 +69,40 @@ begin
 end;
 
 // Initialization Files
-function IniReadBool(const FileName, Section, Line: string): Boolean;
+function IniReadBool(const FileName, Section, Line: string; Default: Boolean
+  ): Boolean;
 var
   Ini: TIniFile;
 begin
   Ini := TIniFile.Create(FileName);
   try
-    Result := Ini.ReadBool(Section, Line, False);
+    Result := Ini.ReadBool(Section, Line, Default);
   finally
     Ini.Free;
   end;
 end;
 
-function IniReadInteger(const FileName, Section, Line: string): Integer;
+function IniReadInteger(const FileName, Section, Line: string; Default: Integer
+  ): Integer;
 var
   Ini: TIniFile;
 begin
   Ini := TIniFile.Create(FileName);
   try
-    Result := Ini.ReadInteger(Section, Line, 0);
+    Result := Ini.ReadInteger(Section, Line, Default);
   finally
     Ini.Free;
   end;
 end;
 
-function IniReadString(const FileName, Section, Line: string): string;
+function IniReadString(const FileName, Section, Line: string; Default: String
+  ): string;
 var
   Ini: TIniFile;
 begin
   Ini := TIniFile.Create(FileName);
   try
-    Result := Ini.ReadString(Section, Line, '');
+    Result := Ini.ReadString(Section, Line, Default);
   finally
     Ini.Free;
   end;

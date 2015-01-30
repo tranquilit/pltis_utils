@@ -46,6 +46,10 @@ function  GetApplicationVersion(FileName:Utf8String=''): Utf8String;
 function GetApplicationName:AnsiString;
 function GetPersonalFolder:AnsiString;
 function GetAppdataFolder:AnsiString;
+function GetStartMenuFolder: Utf8String;
+function GetCommonStartMenuFolder: Utf8String;
+function GetStartupFolder: Utf8String;
+function GetCommonStartupFolder: Utf8String;
 
 function GetUniqueTempdir(Prefix: String): String;
 
@@ -686,32 +690,23 @@ begin
 end;
 
 function GetStartMenuFolder: Utf8String;
-var
-  Registry: TRegistry;
 begin
-  Registry := TRegistry.Create;
-  Registry.RootKey := HKEY_CURRENT_USER;
+  result := GetSpecialFolderLocation(CSIDL_STARTMENU);
+end;
 
-  if Registry.OpenKeyReadOnly( strnShellFolders ) then
-    Result := AppendPathDelim(Registry.ReadString('Start Menu'))
-  else
-    Result := '';
-
-  Registry.Free;
+function GetCommonStartMenuFolder: Utf8String;
+begin
+  result := GetSpecialFolderLocation(CSIDL_COMMON_STARTMENU);
 end;
 
 function GetStartupFolder: Utf8String;
-var
-  Registry: TRegistry;
 begin
-  Registry := TRegistry.Create;
-  Registry.RootKey := HKEY_CURRENT_USER;
+  result := GetSpecialFolderLocation(CSIDL_STARTUP);
+end;
 
-  if Registry.OpenKeyReadOnly( strnShellFolders ) then
-    Result := AppendPathDelim(Registry.ReadString( 'Startup' ))
-  else
-    Result := '';
-  Registry.Free;
+function GetCommonStartupFolder: Utf8String;
+begin
+  result := GetSpecialFolderLocation(CSIDL_COMMON_STARTUP);
 end;
 
 function GetCurrentUser: AnsiString;
@@ -729,7 +724,7 @@ begin
   else
   begin
     Result := '';
-  end;//if
+  end;
 end;
 
 // to store use specific settings for this application
@@ -889,37 +884,36 @@ end;
 
 function KillTask(ExeFileName: string): integer;
 const
- PROCESS_TERMINATE=$0001;
+  PROCESS_TERMINATE=$0001;
 var
- ContinueLoop: BOOL;
- FSnapshotHandle: THandle;
- FProcessEntry32: TProcessEntry32;
+  ContinueLoop: BOOL;
+  FSnapshotHandle: THandle;
+  FProcessEntry32: TProcessEntry32;
 begin
- result := 0;
+  result := 0;
 
- FSnapshotHandle := CreateToolhelp32Snapshot
+  FSnapshotHandle := CreateToolhelp32Snapshot
            (TH32CS_SNAPPROCESS, 0);
- FProcessEntry32.dwSize := Sizeof(FProcessEntry32);
- ContinueLoop := Process32First(FSnapshotHandle,
+  FProcessEntry32.dwSize := Sizeof(FProcessEntry32);
+  ContinueLoop := Process32First(FSnapshotHandle,
                  FProcessEntry32);
 
- while integer(ContinueLoop) <> 0 do
- begin
-  if ((UpperCase(ExtractFileName(
-            FProcessEntry32.szExeFile)) =
-     UpperCase(ExeFileName)) or
-    (UpperCase(FProcessEntry32.szExeFile) =
-     UpperCase(ExeFileName))) then
+  while integer(ContinueLoop) <> 0 do
+  begin
+    if ((UpperCase(ExtractFileName(FProcessEntry32.szExeFile))
+          = UpperCase(ExeFileName)) or
+        (UpperCase(FProcessEntry32.szExeFile) =
+         UpperCase(ExeFileName))) then
 
-   Result := Integer(TerminateProcess(OpenProcess(
+    Result := Integer(TerminateProcess(OpenProcess(
             PROCESS_TERMINATE, BOOL(0),
             FProcessEntry32.th32ProcessID), 0));
 
-  ContinueLoop := Process32Next(FSnapshotHandle,
+    ContinueLoop := Process32Next(FSnapshotHandle,
                  FProcessEntry32);
- end;
+  end;
 
- CloseHandle(FSnapshotHandle);
+  CloseHandle(FSnapshotHandle);
 end;
 
 

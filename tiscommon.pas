@@ -971,7 +971,7 @@ var
   ret    : Integer;
   wsdata : WSAData;
 begin
- sock := 0;
+ sock := -1;
  Result:=False;
  ret := WSAStartup($0002, wsdata); //initiates use of the Winsock DLL
   if ret<>0 then exit;
@@ -982,7 +982,8 @@ begin
     sock  :=socket(AF_INET, SOCK_STREAM, 0);    //creates a socket
     Result:=connect(sock,client,SizeOf(client))=0;  //establishes a connection to a specified socket
   finally
-    closesocket(sock);
+    if sock>=0 then
+      closesocket(sock);
     WSACleanup;
   end;
 end;

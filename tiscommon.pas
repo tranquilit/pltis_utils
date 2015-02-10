@@ -917,14 +917,13 @@ begin
 end;
 
 
-// from http://sourceforge.net/p/pascalscada/code/HEAD/tree/trunk/src/scada/sockets_w32_w64.pas#l79
-function connect_with_timeout(sock:Tsocket; address:TSockAddr; address_len:integer; timeout:LongInt):LongInt;
+//From Pascal SCADA / sockets_w32_w64  (C) Fabio Luis Girardi
+function WaitForConnection(FListenerSocket:TSocket; timeout:LongInt):Boolean;
 var
-  sel:TFDSet;
+  readsel,wrsel:TFDSet;
   mode:u_long;
   tv : TTimeVal;
   p:ptimeval;
-  err:AnsiString;
 begin
 
   if timeout=-1 then
@@ -935,41 +934,33 @@ begin
     p:=@tv;
   end;
 
-  Result:=0;
-  if connect(sock, address, address_len) <> SOCKET_ERROR then
-  try
-    err := 'lasterr '+inttostr(WSAGetLastError);
-    OutputDebugString(pansichar(err));
-    if WSAGetLastError=WSAEWOULDBLOCK then begin
-      FD_ZERO(sel);
-      FD_SET(sock, sel);
-      mode := select(sock, nil, @sel, nil, p);
 
-      if (mode < 0) then begin
-        Result := -1;
-      end else begin
-        if (mode > 0) then begin
-          Result := 0;
-        end else begin
-          if (mode = 0) then begin
-            Result := -2;
-          end;
-        end;
-      end;
-    end else
-      Result := -1;
-  finally
-  end;
+  FD_ZERO(readsel);
+  FD_SET(FListenerSocket, readsel);
+  FD_ZERO(wrsel);
+  FD_SET(FListenerSocket, wrsel);
+
+  mode := select(FListenerSocket, @readsel, @wrsel, nil, p);
+
+  if (mode <= 0) then begin
+    Result := false;
+  end else
+    if (mode > 0) then begin
+      Result := true;
+    end;
 end;
 
+
 // from http://theroadtodelphi.wordpress.com/2010/02/21/checking-if-a-tcp-port-is-open-using-delphi-and-winsocks/
-function PortTCP_IsOpen(dwPort : Word; ipAddressStr:AnsiString) : boolean;
+// + Pascal Scada
+function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:integer=1000):boolean;
 var
   client : sockaddr_in;
   sock   : Integer;
 
   ret    : Integer;
   wsdata : WSAData;
+  mode   : long;
 begin
  sock := -1;
  Result:=False;
@@ -980,13 +971,18 @@ begin
     client.sin_port        := htons(dwPort); //convert to TCP/IP network byte order (big-endian)
     client.sin_addr.s_addr := inet_addr(PAnsiChar(ipAddressStr));  //convert to IN_ADDR  structure
     sock  :=socket(AF_INET, SOCK_STREAM, 0);    //creates a socket
-    Result:=connect(sock,client,SizeOf(client))=0;  //establishes a connection to a specified socket
+    mode := 1;
+    ioctlsocket(sock, FIONBIO, @mode);
+    Result:= (connect(sock,client,SizeOf(client)) <>0) and (WSAGetLastError=WSAEWOULDBLOCK) and
+        WaitForConnection(sock,TimeOut);  //establishes a connection to a specified socket
   finally
     if sock>=0 then
       closesocket(sock);
     WSACleanup;
   end;
 end;
+
+
 
 function GetIPFromHost(const HostName: ansistring): ansistring;
 type
@@ -1036,6 +1032,7 @@ begin
 end;
 
 
+{
 function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:integer=5000):boolean;
 var
   St:TDateTime;
@@ -1050,6 +1047,7 @@ begin
     result := PortTCP_IsOpen(dwPort,ip);
   end;
 end;
+}
 
 procedure ResetMemory(out P; Size: Longint);
 begin

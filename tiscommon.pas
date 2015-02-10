@@ -953,7 +953,7 @@ end;
 
 // from http://theroadtodelphi.wordpress.com/2010/02/21/checking-if-a-tcp-port-is-open-using-delphi-and-winsocks/
 // + Pascal Scada
-function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:integer=1000):boolean;
+function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:integer=5000):boolean;
 var
   client : sockaddr_in;
   sock   : Integer;

@@ -42,8 +42,9 @@ type
     end;
 
 function wget(const fileURL, DestFileName: Utf8String; CBReceiver:TObject=Nil;progressCallback:TProgressCallback=Nil;enableProxy:Boolean=False): boolean;
-function wget_try(url: ansistring; enableProxy:Boolean= False;
-   ConnectTimeout:integer=4000;user:AnsiString='';password:AnsiString=''):Boolean;
+
+function httpGetHeaders(url: ansistring; enableProxy:Boolean= False;
+   ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString=''):RawByteString;
 
 function httpGetString(url: ansistring; enableProxy:Boolean= False;
     ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString=''):RawByteString;
@@ -132,11 +133,14 @@ begin
   end
 end;
 
-function wget_try(url: ansistring; enableProxy:Boolean= False;
-   ConnectTimeout:integer=4000;user:AnsiString='';password:AnsiString=''):Boolean;
+
+function httpGetHeaders(url: ansistring; enableProxy:Boolean= False;
+   ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString=''):RawByteString;
 var
   hInet,hFile,hConnect: HINTERNET;
   buffer: array[1..1024] of byte;
+  OutBufferLen:Cardinal;
+  OutBuffer:PAnsiChar;
   flags,bytesRead,dwError,port : DWORD;
   pos:integer;
   dwindex,dwcodelen,dwread,dwNumber: cardinal;
@@ -147,7 +151,8 @@ var
   puser,ppassword:PAnsiChar;
 
 begin
-  result := False;
+  result := '';
+
   hInet:=Nil;
   hConnect := Nil;
   hFile:=Nil;
@@ -157,6 +162,8 @@ begin
      hInet := InternetOpen('wapt',INTERNET_OPEN_TYPE_DIRECT,nil,nil,0);
   try
     InternetSetOption(hInet,INTERNET_OPTION_CONNECT_TIMEOUT,@ConnectTimeout,sizeof(integer));
+    InternetSetOption(hInet,INTERNET_OPTION_SEND_TIMEOUT,@SendTimeOut,sizeof(integer));
+    InternetSetOption(hInet,INTERNET_OPTION_RECEIVE_TIMEOUT,@ReceiveTimeOut,sizeof(integer));
     uri := ParseURI(url,'http',80);
     if (uri.Protocol = 'https') and (uri.port=80) then
       uri.port := 443;
@@ -184,7 +191,7 @@ begin
     doc := uri.Path+uri.document;
     if uri.params<>'' then
       doc:= doc+'?'+uri.Params;
-    hFile := HttpOpenRequest(hConnect, 'GET', PAnsiChar(doc), HTTP_VERSION, nil, nil,flags , 0);
+    hFile := HttpOpenRequest(hConnect, 'HEAD', PAnsiChar(doc), HTTP_VERSION, nil, nil,flags , 0);
     if not Assigned(hFile) then
       Raise EHTTPException.Create('Unable to get doc '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')',0);
 
@@ -198,17 +205,38 @@ begin
           Raise EHTTPException.Create('Unable to send request to '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')',0);
       end;
     end;
-    Result := True;
+
+    OutBuffer:=Nil;
+    OutBufferLen:=0;
+    if Assigned(hFile) then
+    try
+      HttpQueryInfo(hFile, HTTP_QUERY_RAW_HEADERS_CRLF, OutBuffer,@OutBufferLen, Nil);
+      if OutBufferLen>0 then
+      begin
+        OutBuffer := Getmem(OutBufferLen);
+        if HttpQueryInfo(hFile, HTTP_QUERY_RAW_HEADERS_CRLF, OutBuffer,@OutBufferLen, Nil) then
+        begin
+          Result := PAnsiChar(OutBuffer);
+          //SetLength(Result,OutBufferLen);
+          //Move(OutBuffer,Result[1],OutBufferLen);
+        end;
+      end;
+    finally
+      if Assigned(OutBuffer) then
+        Freemem(OutBuffer);
+      InternetCloseHandle(hFile);
+      if Assigned(hFile) then
+        InternetCloseHandle(hFile);
+    end
 
   finally
-    if Assigned(hFile) then
-      InternetCloseHandle(hFile);
     if Assigned(hConnect) then
       InternetCloseHandle(hConnect);
     if Assigned(hInet) then
       InternetCloseHandle(hInet);
   end;
 end;
+
 
 
 // récupère une chaine de caractères en http en utilisant l'API windows

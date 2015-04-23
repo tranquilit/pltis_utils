@@ -43,7 +43,6 @@ procedure UpdateApplication(fromURL:AnsiString;SetupExename,SetupParams,ExeName,
 
 function  GetApplicationVersion(FileName:Utf8String=''): Utf8String;
 
-function GetApplicationName:AnsiString;
 function GetPersonalFolder:AnsiString;
 function GetAppdataFolder:AnsiString;
 function GetStartMenuFolder: Utf8String;
@@ -70,10 +69,7 @@ function GetGroups(srvName, usrName: WideString):TDynStringArray;
 function SortableVersion(VersionString:AnsiString):AnsiString;
 function CompareVersion(v1,v2:AnsiString):integer;
 
-type LogLevel=(DEBUG, INFO, WARNING, ERROR, CRITICAL);
-const StrLogLevel: array[DEBUG..CRITICAL] of String = ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL');
-procedure Logger(Msg:AnsiString;level:LogLevel=WARNING);
-
+function GetCmdParams(ID:String;Default:String=''):String;
 
 {Const
   SECURITY_NT_AUTHORITY: TSIDIdentifierAuthority = (Value: (0, 0, 0, 0, 0, 5));
@@ -126,18 +122,11 @@ function StopServiceByName(const AServer, AServiceName: AnsiString):Boolean;
 
 function MakePath(const parts:array of String):String;
 
-var
-  loghook : procedure(logmsg:AnsiString) of object;
-
-const
-    currentLogLevel:LogLevel=WARNING;
-
 implementation
 
-uses registry,FileUtil,tishttp,URIParser,Process,zipper,
+uses registry,FileUtil,tiswinhttp,tislogging,URIParser,Process,zipper,
     shlobj,winsock2,JwaTlHelp32,jwalmwksta,jwalmapibuf,JwaWinBase,
     jwalmaccess,jwalmcons,jwalmerr,JwaWinNT;
-
 
 function MakePath(const parts:array of String):String;
 var
@@ -646,11 +635,6 @@ begin
 end;
 
 
-function GetApplicationName:AnsiString;
-begin
-  Result := ChangeFileExt(ExtractFileName(ParamStr(0)),'');
-end;
-
 function GetSpecialFolderLocation(csidl: Integer; ForceFolder: Boolean = False ): AnsiString;
 var
   i: integer;
@@ -732,10 +716,10 @@ function Appuserinipath:AnsiString;
 var
   dir : AnsiString;
 begin
-  dir := IncludeTrailingPathDelimiter(GetAppdataFolder)+GetApplicationName;
+  dir := IncludeTrailingPathDelimiter(GetAppdataFolder)+ApplicationName;
   if not DirectoryExists(dir) then
     MkDir(dir);
-  Result:=IncludeTrailingPathDelimiter(dir)+GetApplicationName+'.ini';
+  Result:=IncludeTrailingPathDelimiter(dir)+ApplicationName+'.ini';
 end;
 
 function SortableVersion(VersionString: AnsiString): AnsiString;
@@ -1339,6 +1323,32 @@ begin
     CloseHandle(hAccessToken);
   end;
 end;
+
+function GetCmdParams(ID:String;Default:String=''):String;
+var
+	i:integer;
+	S:String;
+  found:Boolean;
+begin
+	Result:='';
+  found:=False;
+	for i:=1 to ParamCount do
+	begin
+		S:=ParamStr(i);
+		if
+			(AnsiCompareText(Copy(S, 1, Length(ID)+2), '/'+ID+'=') = 0) or
+			(AnsiCompareText(Copy(S, 1, Length(ID)+2), '-'+ID+'=') = 0) then
+		begin
+      found:=True;
+			Result:=Copy(S,Length(ID)+2+1,MaxInt);
+			Break;
+		end;
+	end;
+  if not Found then
+    Result:=Default;
+end;
+
+
 
 end.
 

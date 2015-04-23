@@ -1,4 +1,4 @@
-unit tishttp;
+unit tiswinhttp;
 { -----------------------------------------------------------------------
 #    This file is part of WAPT
 #    Copyright (C) 2013  Tranquil IT Systems http://www.tranquil.it
@@ -45,7 +45,6 @@ function wget(const fileURL, DestFileName: Utf8String; CBReceiver:TObject=Nil;pr
 
 function httpGetHeaders(url: ansistring; enableProxy:Boolean= False;
    ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString=''):RawByteString;
-
 function httpGetString(url: ansistring; enableProxy:Boolean= False;
     ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString=''):RawByteString;
 function httpPostData(const UserAgent: ansistring; const url: Ansistring; const Data: RawByteString; enableProxy:Boolean= False;
@@ -82,7 +81,7 @@ begin
   else
       hSession := InternetOpenW(PWideChar(UTF8Decode(sAppName)), INTERNET_OPEN_TYPE_DIRECT, nil, nil, 0) ;
   try
-    if forceReload then
+    if not forceReload then
       hURL := InternetOpenUrlW(hSession, PWideChar(UTF8Decode(fileURL)), nil, 0,  INTERNET_FLAG_DONT_CACHE+INTERNET_FLAG_KEEP_CONNECTION, 0)
     else
       hURL := InternetOpenUrlW(hSession, PWideChar(UTF8Decode(fileURL)), nil, 0, INTERNET_FLAG_DONT_CACHE+INTERNET_FLAG_RELOAD+INTERNET_FLAG_PRAGMA_NOCACHE+INTERNET_FLAG_KEEP_CONNECTION, 0) ;

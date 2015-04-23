@@ -128,8 +128,8 @@ type
   TDynStringArray        = array of Ansistring;
   TCharValidator = function(const C: Char): Boolean;
 
-  function ArrayContainsChar(const Chars: array of Char; const C: Char): Boolean; overload;
-  function ArrayContainsChar(const Chars: array of Char; const C: Char; out Index: SizeInt): Boolean; overload;
+function ArrayContainsChar(const Chars: array of Char; const C: Char): Boolean; overload;
+function ArrayContainsChar(const Chars: array of Char; const C: Char; out Index: SizeInt): Boolean; overload;
 
 // String Search and Replace Routines
 function StrCharCount(const S: string; C: Char): SizeInt; overload;
@@ -240,8 +240,8 @@ function FileToString(const FileName: string): {$IFDEF COMPILER12_UP}RawByteStri
 procedure StringToFile(const FileName: string; const Contents: {$IFDEF COMPILER12_UP}RawByteString{$ELSE}AnsiString{$ENDIF};
   Append: Boolean = False);
 
-function StrToken(var S: ansistring; Separator: ansiString): ansistring;
-procedure StrTokenToStrings(S: ansistring; Separator: Char; const List: TStrings);
+function StrToken(var S: string; Separator: String): String;
+procedure StrTokenToStrings(S: string; Separator: String; const List: TStrings);
 function StrWord(const S: string; var Index: SizeInt; out Word: string): Boolean; overload;
 function StrWord(var S: PChar; out Word: string): Boolean; overload;
 function StrIdent(const S: string; var Index: SizeInt; out Ident: string): Boolean; overload;
@@ -1912,7 +1912,7 @@ begin
   end;
 end;
 
-function StrToken(var S: ansistring; Separator: ansiString): ansistring;
+function StrToken(var S: String; Separator: String): String;
 var
   I: SizeInt;
 begin
@@ -2101,9 +2101,9 @@ begin
   end;
 end;
 
-procedure StrTokenToStrings(S: ansistring; Separator: Char; const List: TStrings);
+procedure StrTokenToStrings(S: String; Separator: String; const List: TStrings);
 var
-  Token: ansistring;
+  Token: String;
 begin
   Assert(List <> nil);
 

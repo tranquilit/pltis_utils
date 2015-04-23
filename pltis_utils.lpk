@@ -18,8 +18,8 @@
       </Other>
     </CompilerOptions>
     <Description Value="Various strings, datetime, etc routines"/>
-    <Version Minor="4"/>
-    <Files Count="6">
+    <Version Minor="5"/>
+    <Files Count="8">
       <Item1>
         <Filename Value="tisutils.pas"/>
         <UnitName Value="tisutils"/>
@@ -41,9 +41,17 @@
         <UnitName Value="tiscommon"/>
       </Item5>
       <Item6>
-        <Filename Value="tishttp.pas"/>
-        <UnitName Value="tishttp"/>
+        <Filename Value="tislogging.pas"/>
+        <UnitName Value="tislogging"/>
       </Item6>
+      <Item7>
+        <Filename Value="tiswinhttp.pas"/>
+        <UnitName Value="tiswinhttp"/>
+      </Item7>
+      <Item8>
+        <Filename Value="tiswinhttpini.pas"/>
+        <UnitName Value="tiswinhttpini"/>
+      </Item8>
     </Files>
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="1">

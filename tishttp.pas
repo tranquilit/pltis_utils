@@ -41,7 +41,7 @@ type
       constructor Create(const msg: string;AHTTPStatus:Integer);
     end;
 
-function wget(const fileURL, DestFileName: Utf8String; CBReceiver:TObject=Nil;progressCallback:TProgressCallback=Nil;enableProxy:Boolean=False): boolean;
+function wget(const fileURL, DestFileName: Utf8String; CBReceiver:TObject=Nil;progressCallback:TProgressCallback=Nil;enableProxy:Boolean=False;forceReload:Boolean=True): boolean;
 
 function httpGetHeaders(url: ansistring; enableProxy:Boolean= False;
    ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString=''):RawByteString;
@@ -57,7 +57,7 @@ implementation
 
 uses URIParser,FileUtil,JwaWinType,JwaWinBase;
 
-Function wget(const fileURL, DestFileName: Utf8String; CBReceiver:TObject=Nil;progressCallback:TProgressCallback=Nil;enableProxy:Boolean=False): boolean;
+Function wget(const fileURL, DestFileName: Utf8String; CBReceiver:TObject=Nil;progressCallback:TProgressCallback=Nil;enableProxy:Boolean=False;forceReload:Boolean=True): boolean;
  const
    BufferSize = 1024*512;
  var
@@ -82,7 +82,10 @@ begin
   else
       hSession := InternetOpenW(PWideChar(UTF8Decode(sAppName)), INTERNET_OPEN_TYPE_DIRECT, nil, nil, 0) ;
   try
-    hURL := InternetOpenUrlW(hSession, PWideChar(UTF8Decode(fileURL)), nil, 0, INTERNET_FLAG_RELOAD+INTERNET_FLAG_PRAGMA_NOCACHE+INTERNET_FLAG_KEEP_CONNECTION, 0) ;
+    if forceReload then
+      hURL := InternetOpenUrlW(hSession, PWideChar(UTF8Decode(fileURL)), nil, 0,  INTERNET_FLAG_DONT_CACHE+INTERNET_FLAG_KEEP_CONNECTION, 0)
+    else
+      hURL := InternetOpenUrlW(hSession, PWideChar(UTF8Decode(fileURL)), nil, 0, INTERNET_FLAG_DONT_CACHE+INTERNET_FLAG_RELOAD+INTERNET_FLAG_PRAGMA_NOCACHE+INTERNET_FLAG_KEEP_CONNECTION, 0) ;
     if assigned(hURL) then
     try
       dwIndex  := 0;

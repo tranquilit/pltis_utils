@@ -941,20 +941,29 @@ function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:integer=50
 var
   client : sockaddr_in;
   sock   : Integer;
-
+  IP: AnsiString;
   ret    : Integer;
   wsdata : WSAData;
   mode   : long;
 begin
- sock := -1;
- Result:=False;
- ret := WSAStartup($0002, wsdata); //initiates use of the Winsock DLL
-  if ret<>0 then exit;
+  sock := -1;
+  Result := False;
+  IP := '';
+
+  ret := WSAStartup($0002, wsdata); //initiates use of the Winsock DLL
+  if ret<>0 then
+    exit;
+
   try
+
+    IP := GetIPFromHost(ipAddressStr);
+    if IP = '' then
+      exit;
+
     client.sin_family      := AF_INET;  //Set the protocol to use , in this case (IPv4)
     client.sin_port        := htons(dwPort); //convert to TCP/IP network byte order (big-endian)
-    client.sin_addr.s_addr := inet_addr(PAnsiChar(ipAddressStr));  //convert to IN_ADDR  structure
-    sock  :=socket(AF_INET, SOCK_STREAM, 0);    //creates a socket
+    client.sin_addr.s_addr := inet_addr(PAnsiChar(IP));  //convert to IN_ADDR  structure
+    sock := socket(AF_INET, SOCK_STREAM, 0);    //creates a socket
     mode := 1;
     ioctlsocket(sock, FIONBIO, @mode);
     Result:= (connect(sock,client,SizeOf(client)) <>0) and (WSAGetLastError=WSAEWOULDBLOCK) and

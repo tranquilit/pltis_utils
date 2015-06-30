@@ -719,7 +719,7 @@ begin
 end;
 
 {$ifdef windows}
-function GetDomainName: AnsiString;
+function GetDomainNameWindows: AnsiString;
 var
   hProcess, hAccessToken: THandle;
   InfoBuffer: PAnsiChar;
@@ -908,7 +908,7 @@ begin
 end;
 
 {$ifdef windows}
-function GetComputerName : AnsiString;
+function GetComputerNameWindows : AnsiString;
 var
   buffer: array[0..255] of ansichar;
   size: dword;
@@ -1648,4 +1648,4 @@ end;
 
 
 end.
-
+

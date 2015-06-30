@@ -38,6 +38,8 @@ end.
 
 {$else}
 
+interface
+
 uses
   Classes, SysUtils, wininet;
 
@@ -529,4 +531,4 @@ end;
 {$endif} // windows
 
 end.
-
+

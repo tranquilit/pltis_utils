@@ -32,7 +32,9 @@ unit tiscommon;
 interface
 
 uses
-  Classes, SysUtils,tisstrings,windows;
+  Classes, SysUtils,tisstrings
+  {$ifdef windows}, windows {$endif}
+  ;
 
 Procedure UnzipFile(ZipFilePath,OutputPath:Utf8String);
 Procedure AddToUserPath(APath:Utf8String);
@@ -41,6 +43,28 @@ procedure AddToSystemPath(APath:Utf8String);
 procedure UpdateCurrentApplication(fromURL:AnsiString;Restart:Boolean;restartparam:AnsiString);
 procedure UpdateApplication(fromURL:AnsiString;SetupExename,SetupParams,ExeName,RestartParam:AnsiString);
 
+function SortableVersion(VersionString:AnsiString):AnsiString;
+function CompareVersion(v1,v2:AnsiString):integer;
+
+function GetComputerName : AnsiString;
+function GetUserName : AnsiString;
+function GetWorkgroupName: AnsiString;
+function GetDomainName: AnsiString;
+function UserInGroup(Group :DWORD) : Boolean;
+
+function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:integer=5000):boolean;
+function GetIPFromHost(const HostName: ansistring): ansistring;
+
+function MakePath(const parts:array of String):String;
+function RunTask(cmd: utf8string;var ExitStatus:integer;WorkingDir:utf8String=''): utf8string;
+
+function GetSystemProductName: String;
+function GetSystemManufacturer: String;
+function GetBIOSVendor: String;
+function GetBIOSVersion: String;
+function GetBIOSDate:AnsiString;
+
+{$ifdef windows}
 function  GetApplicationVersion(FileName:Utf8String=''): Utf8String;
 
 function GetPersonalFolder:AnsiString;
@@ -53,10 +77,6 @@ function GetCommonStartupFolder: Utf8String;
 function GetUniqueTempdir(Prefix: String): String;
 
 function Appuserinipath:AnsiString;
-function GetComputerName : AnsiString;
-function GetUserName : AnsiString;
-function GetWorkgroupName: AnsiString;
-function GetDomainName: AnsiString;
 
 function GetCurrentUserSid: Ansistring;
 
@@ -66,10 +86,8 @@ function OnSystemAccount: Boolean;
 
 function GetGroups(srvName, usrName: WideString):TDynStringArray;
 
-function SortableVersion(VersionString:AnsiString):AnsiString;
-function CompareVersion(v1,v2:AnsiString):integer;
-
 function GetCmdParams(ID:String;Default:String=''):String;
+
 
 {Const
   SECURITY_NT_AUTHORITY: TSIDIdentifierAuthority = (Value: (0, 0, 0, 0, 0, 5));
@@ -100,33 +118,26 @@ type
 const
   ssPendingStates = [ssStartPending, ssStopPending, ssContinuePending, ssPausePending];
 
-function UserInGroup(Group :DWORD) : Boolean;
 function IsAdminLoggedOn: Boolean;
 function ProcessExists(ExeFileName: string): boolean;
 function KillTask(ExeFileName: string): integer;
-function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:integer=5000):boolean;
-function GetIPFromHost(const HostName: ansistring): ansistring;
-
-function RunTask(cmd: utf8string;var ExitStatus:integer;WorkingDir:utf8String=''): utf8string;
-
-function GetSystemProductName: String;
-function GetSystemManufacturer: String;
-function GetBIOSVendor: String;
-function GetBIOSVersion: String;
-function GetBIOSDate:AnsiString;
 
 function GetServiceStatusByName(const AServer,AServiceName:ansistring):TServiceState;
 function StartServiceByName(const AServer,AServiceName: AnsiString):Boolean;
 function StopServiceByName(const AServer, AServiceName: AnsiString):Boolean;
-
-
-function MakePath(const parts:array of String):String;
+{$endif}
 
 implementation
 
-uses registry,FileUtil,tiswinhttp,tislogging,URIParser,Process,zipper,
-    shlobj,winsock2,JwaTlHelp32,jwalmwksta,jwalmapibuf,JwaWinBase,
-    jwalmaccess,jwalmcons,jwalmerr,JwaWinNT;
+uses registry,FileUtil,tiswinhttp,tislogging,URIParser,Process,zipper
+    {$ifdef windows}
+    ,shlobj,winsock2,JwaTlHelp32,jwalmwksta,jwalmapibuf,JwaWinBase,
+    jwalmaccess,jwalmcons,jwalmerr,JwaWinNT
+    {$endif}
+    {$ifdef unix}
+    , baseunix, cnetdb, errors, sockets, unix
+    {$endif}
+    ;
 
 function MakePath(const parts:array of String):String;
 var
@@ -141,6 +152,7 @@ begin
   end;
 end;
 
+{$ifdef windows}
 function IsAdminLoggedOn: Boolean;
 { Returns True if the logged-on user is a member of the Administrators local
   group. Always returns True on Windows 9x/Me. }
@@ -149,6 +161,7 @@ const
 begin
   Result := UserInGroup(DOMAIN_ALIAS_RID_ADMINS);
 end;
+{$endif}
 
 function GetSystemProductName: String;
 const
@@ -228,7 +241,8 @@ begin
   end;
 end;
 
-function GetBIOSDate: AnsiString;
+{$ifdef windows}
+function GetBIOSDateWindows: AnsiString;
 const
   WinNT_REG_PATH = 'HARDWARE\DESCRIPTION\System';
   WinNT_REG_KEY  = 'SystemBiosDate';
@@ -249,8 +263,19 @@ begin
     R.Free;
   end;
 end;
+{$endif}
 
-function UserInGroup(Group :DWORD) : Boolean;
+function GetBIOSDate: AnsiString;
+begin
+  {$ifdef windows}
+  Result := GetBIOSDateWindows();
+  {$else}
+  Result := 'Unknown BIOS version';
+  {$endif}
+end;
+
+{$ifdef windows}
+function UserInGroupWindows(Group :DWORD) : Boolean;
 var
   pIdentifierAuthority :TSidIdentifierAuthority;
   pSid : jwawinnt.PSID;
@@ -267,6 +292,24 @@ begin
   finally
      FreeSid(pSid);
   end;
+end;
+{$endif}
+
+{$ifdef unix}
+function UserInGroupUnix(Group: Integer) : Boolean;
+begin
+ { TODO }
+  Result := False;
+end;
+{$endif}
+
+function UserInGroup(Group: DWORD): Boolean;
+begin
+  {$ifdef windows}
+  Result := UserInGroup(group);
+  {$else}
+  Result := UserInGroupUnix(Integer(Group));
+  {$endif}
 end;
 
 //Unzip file to path, and return list of files as a string
@@ -306,7 +349,8 @@ begin
   end;
 end;
 
-procedure AddToSystemPath(APath:Utf8String);
+{$ifdef windows}
+procedure AddToSystemPathWindows(APath:Utf8String);
 var
   SystemPath : Utf8String;
   aresult:LongWord;
@@ -328,6 +372,24 @@ begin
     Free;
   end;
 end;
+{$endif}
+
+{$ifdef unix}
+procedure AddToSystemPathUnix(APath: Utf8String);
+begin
+  { XXX TODO }
+end;
+{$endif}
+
+procedure AddToSystemPath(APath: Utf8String);
+begin
+  {$ifdef windows}
+  AddToSystemPathWindows(APath);
+  {$else}
+  AddToSystemPathUnix(APath);
+  {$endif}
+end;
+
 
 procedure UpdateCurrentApplication(fromURL:AnsiString;restart:Boolean;restartparam:AnsiString);
 var
@@ -338,6 +400,7 @@ var
   i:integer;
   hinstance:Integer;
 begin
+  {$ifdef windows}
   Files := TStringList.Create;
   try
     Logger('Updating current application in place...');
@@ -424,6 +487,7 @@ begin
   finally
     Files.Free;
   end;
+{$endif}
 end;
 
 function GetUniqueTempdir(Prefix: String): String;
@@ -452,6 +516,7 @@ var
   UnZipper: TUnZipper;
   i,hinstance:integer;
 begin
+  {$ifdef windows}
   Files := TStringList.Create;
   try
     Logger('Updating application...');
@@ -532,10 +597,12 @@ begin
   finally
     Files.Free;
   end;
+  {$endif}
+
 end;
 
-
-function GetUserName : AnsiString;
+{$ifdef windows}
+function GetUserNameWindows: AnsiString;
 var
 	 pcUser   : PAnsiChar;
 	 dwUSize : DWORD;
@@ -548,6 +615,23 @@ begin
 	 finally
 			FreeMem( pcUser ); // now free the memory allocated for the string
 	 end;
+end;
+{$endif}
+
+{$ifdef unix}
+function GetUserNameUnix: AnsiString;
+begin
+  Result := 'john.doe';
+end;
+{$endif}
+
+function GetUserName: AnsiString;
+begin
+  {$ifdef windows}
+  Result := GetUserNameWindows();
+  {$else}
+  Result := GetUserNameUnix();
+  {$endif}
 end;
 
 procedure StrResetLength(var S: AnsiString);
@@ -562,7 +646,8 @@ begin
     end;
 end;
 
-function GetUserDomainName(const CurUser: Ansistring): AnsiString;
+{$ifdef windows}
+function GetUserDomainNameWindows(const CurUser: Ansistring): AnsiString;
 var
   Count1, Count2: DWORD;
   Sd: PSID; // PSecurityDescriptor; // FPC requires PSID
@@ -585,8 +670,26 @@ begin
     FreeMem(Sd);
   end;
 end;
+{$endif}
 
-function GetWorkGroupName: AnsiString;
+{$ifdef unix}
+function GetUserDomainNameUnix(const curUser: Ansistring): AnsiString;
+begin
+  Result := 'unknowndomain';
+end;
+{$endif}
+
+function GetUserDomainName(const curUser: Ansistring): AnsiString;
+begin
+  {$ifdef windows}
+  Result := GetUserDomainNameWindows(curUser);
+  {$else}
+  Result := GetUserDomainNameUnix(curUser);
+  {$endif}
+end;
+
+{$ifdef windows}
+function GetWorkGroupNameWindows(): AnsiString;
 var
   WkstaInfo: PByte;
   WkstaInfo100: PWKSTA_INFO_100;
@@ -597,7 +700,25 @@ begin
   Result := WkstaInfo100^.wki100_langroup;
   NetApiBufferFree(Pointer(WkstaInfo));
 end;
+{$endif}
 
+{$ifdef unix}
+function GetWorkGroupNameUnix(): AnsiString;
+begin
+  Result := 'unknowndomain';
+end;
+{$endif}
+
+function GetWorkGroupName(): AnsiString;
+begin
+  {$ifdef windows}
+  Result := GetWorkGroupNameWindows();
+  {$else}
+  Result := GetWorkGroupNameUnix();
+  {$endif}
+end;
+
+{$ifdef windows}
 function GetDomainName: AnsiString;
 var
   hProcess, hAccessToken: THandle;
@@ -633,8 +754,25 @@ begin
     CloseHandle(hAccessToken);
   end
 end;
+{$endif}
 
+{$ifdef unix}
+function GetDomainNameUnix(): AnsiString;
+begin
+  Result := 'unknowndomain';
+end;
+{$endif}
 
+function GetDomainName(): AnsiString;
+begin
+  {$ifdef windows}
+  Result := GetDomainNameWindows();
+  {$else}
+  Result := GetDomainNameUnix();
+  {$endif}
+end;
+
+{$ifdef windows}
 function GetSpecialFolderLocation(csidl: Integer; ForceFolder: Boolean = False ): AnsiString;
 var
   i: integer;
@@ -721,6 +859,7 @@ begin
     MkDir(dir);
   Result:=IncludeTrailingPathDelimiter(dir)+ApplicationName+'.ini';
 end;
+{$endif}
 
 function SortableVersion(VersionString: AnsiString): AnsiString;
 var
@@ -768,6 +907,7 @@ begin
   end;
 end;
 
+{$ifdef windows}
 function GetComputerName : AnsiString;
 var
   buffer: array[0..255] of ansichar;
@@ -798,8 +938,25 @@ end;
 		 dwFileDateMS      : DWORD;
 		 dwFileDateLS      : DWORD;
 	end; // TFixedFileInfo
+{$endif}
 
+{$ifdef unix}
+function GetComputerNameUnix : AnsiString;
+begin
+  Result := gethostname();
+end;
+{$endif}
 
+function GetComputerName : AnsiString;
+begin
+  {$ifdef windows}
+  Result := GetComputerNameWindows();
+  {$else}
+  Result := GetComputerNameUnix();
+  {$endif}
+end;
+
+{$ifdef windows}
 function GetApplicationVersion(Filename:Utf8String=''): Utf8String;
 var
 	dwHandle, dwVersionSize : DWORD;
@@ -838,7 +995,6 @@ begin
 			end; // try
 	 end; // if dwVersionSize
 end;
-
 
 function ProcessExists(ExeFileName: string): boolean;
 {description checks if the process is running. Adapted for freepascal from:
@@ -924,6 +1080,7 @@ begin
   FD_ZERO(wrsel);
   FD_SET(FListenerSocket, wrsel);
 
+  // XXX should probably be "FListenerSocket + 1" (ie. max_fd + 1)
   mode := select(FListenerSocket, @readsel, @wrsel, nil, p);
 
   if (mode <= 0) then begin
@@ -974,10 +1131,128 @@ begin
     WSACleanup;
   end;
 end;
+{$endif}
 
+{$ifdef unix}
+function WaitForConnection(sock: cint; timeout:LongInt):Boolean;
+var
+  wrsel: TFDSet;
+  res, sockopt_res, optval: cint;
+  optlen: TSockLen;
+  tv: timeVal;
+  ptv: ptimeval;
+begin
 
+  if timeout = -1 then
+    ptv := nil
+  else
+  begin
+    tv.tv_Sec := Timeout div 1000;
+    tv.tv_Usec := (Timeout mod 1000)*1000;
+    ptv := @tv;
+  end;
 
-function GetIPFromHost(const HostName: ansistring): ansistring;
+  fpFD_ZERO(wrsel);
+  fpFD_SET(sock, wrsel);
+
+  while True do
+  begin
+    res := fpselect(sock + 1, nil, @wrsel, nil, ptv);
+    if (res < 0) then
+    begin
+      // select() error, did we get a signal?
+      if (fpGetErrno() <> EsysEINTR) then
+      begin
+        //writeln('error while connecting ', fpGetErrno());
+        Exit;
+      end
+    end
+    else if (res > 0) then
+    begin
+      // select() indicates writability
+      Assert(fpFD_IsSet(sock, wrsel) <> 0, 'fpselect returned > 0 but there is no socket marked as writable');
+      // we have the result of the connect() call; is it a success?
+      optval := 0;
+      optlen := sizeof(optval);
+      sockopt_res := fpgetsockopt(sock, SOL_SOCKET, SO_ERROR, @optval, @optlen);
+      if sockopt_res <> 0 then
+      begin
+        // unexpected error, better bail out
+        writeln('WaitForConnection: fpgetsockopt() failed: ', StrError(fpGetErrno()));
+        Exit;
+      end
+      else if optval = 0 then
+      begin
+        // connect() succeeded
+        Result := True;
+        Exit;
+      end
+      else if (optval = EsysEINPROGRESS) or (optval = EsysEALREADY) then
+        // nothing
+      else
+      begin
+        // connect() error; silently return False
+        //writeln('WaitForConnection: connect() failed: ', Strerror(optval));
+        Exit;
+      end
+      ;
+    end
+    else
+    begin
+       writeln('WaitForConnection: fpselect() timeout');
+       Exit;
+    end;
+  end;
+end;
+
+function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString; timeout: integer = 5000):boolean;
+var
+  sock, sockflags, res: cint;
+  sin: sockaddr_in;
+  ip: AnsiString;
+begin
+  Result := False;
+  sock := -1;
+
+  ip := GetIPFromHost(ipAddressStr);
+  if ip = '' then
+    Exit;
+
+  FillChar(sin, sizeof(sin), 0);
+  sin.sin_family := AF_INET;
+  sin.sin_port := htons(dwPort);
+  sin.sin_addr := StrToNetAddr(ip);
+
+  try
+    sock := fpsocket(AF_INET, SOCK_STREAM, 0);
+    if sock = -1 then
+      Exit;
+
+    sockflags := fpfcntl(sock, F_GetFl);
+    if sockflags = -1 then
+      Exit;
+    sockflags := sockflags or O_NONBLOCK;
+    if fpfcntl(sock, F_SetFl, sockflags) = -1 then
+      Exit;
+
+    res := fpconnect(sock, psockaddr(@sin), sizeof(sin));
+
+    if res = 0 then
+      Result := True
+    else if (res = -1) and ((fpGetErrno() = EsysEINPROGRESS) or (fpGetErrno() = EsysEALREADY)) then
+      Result := WaitForConnection(sock, timeout)
+    ;
+
+  finally
+    if sock <> -1 then
+      fpclose(sock);
+  end;
+
+end;
+{$endif}
+
+{$ifdef windows}
+function GetIPFromHostWindows(const HostName: ansistring): ansistring;
 type
   TaPInAddr = array[0..10] of PInAddr;
   PaPInAddr = ^TaPInAddr;
@@ -999,6 +1274,35 @@ begin
     Inc(i);
   end;
   WSACleanup;
+end;
+{$endif}
+
+{$ifdef unix}
+function GetIPFromHostUnix(const Hostname: AnsiString): AnsiString;
+type
+  TaPInAddr = array[0..10] of pin_addr;
+  PaPInAddr = ^TaPInAddr;
+var
+  phe: PHostent;
+  pptr: PaPInAddr;
+begin
+  Result := '';
+  phe := gethostbyname(PAnsiChar(Hostname));
+  if phe = nil then
+    Exit;
+  pPtr := PaPInaddr(phe^.h_addr_list);
+  if pPtr^[0] <> nil then
+    Result := NetAddrToStr(pPtr^[0]^);
+end;
+{$endif}
+
+function GetIPFromHost(const Hostname: AnsiString): AnsiString;
+begin
+  {$ifdef windows}
+  Result := GetIPFromHostWindows(Hostname);
+  {$else}
+  Result := GetIPFromHostUnix(Hostname);
+  {$endif}
 end;
 
 function RunTask(cmd: utf8string;var ExitStatus:integer;WorkingDir:utf8String=''): utf8string;
@@ -1025,23 +1329,6 @@ begin
 end;
 
 
-{
-function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:integer=5000):boolean;
-var
-  St:TDateTime;
-  ip:AnsiString;
-begin
-  ip := GetIPFromHost(ipAddressStr);
-  St := Now;
-  Result:=PortTCP_IsOpen(dwPort,ip);
-  While not result and ((Now-St)*1000<timeout/24/3600) do
-  begin
-    Sleep(1000);
-    result := PortTCP_IsOpen(dwPort,ip);
-  end;
-end;
-}
-
 procedure ResetMemory(out P; Size: Longint);
 begin
   if Size > 0 then
@@ -1052,6 +1339,7 @@ begin
 end;
 
 
+{$ifdef windows}
 // From JCL library
 function GetServiceStatusByName(const AServer,AServiceName:ansistring):TServiceState;
 var
@@ -1356,8 +1644,8 @@ begin
   if not Found then
     Result:=Default;
 end;
-
+{$endif}
 
 
 end.
-
+

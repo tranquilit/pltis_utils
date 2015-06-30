@@ -23,15 +23,23 @@ unit tiswinhttp;
 # -----------------------------------------------------------------------
 }
 
+
+
 {functions to get files and string using Winet windows http facilities}
 
 {$mode delphiunicode}
 {$codepage UTF8}
 
+{$ifndef windows}
+
 interface
+implementation
+end.
+
+{$else}
 
 uses
-  Classes, SysUtils,wininet;
+  Classes, SysUtils, wininet;
 
 type
     TProgressCallback=function(Receiver:TObject;current,total:Integer):Boolean of object;
@@ -49,7 +57,9 @@ function httpGetString(url: ansistring; enableProxy:Boolean= False;
     ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString=''):RawByteString;
 function httpPostData(const UserAgent: ansistring; const url: Ansistring; const Data: RawByteString; enableProxy:Boolean= False;
    ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString=''):RawByteString;
+
 function ignoreCerticateErrors(oRequestHandle:HINTERNET; var aErrorMsg: ansistring): Boolean;
+
 function GetWinInetError(ErrorCode:Cardinal): ansistring;
 
 implementation
@@ -516,5 +526,7 @@ begin
   HTTPStatus:=AHTTPStatus;
 end;
 
-end.
+{$endif} // windows
 
+end.
+

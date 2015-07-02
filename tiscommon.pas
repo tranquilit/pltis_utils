@@ -625,9 +625,12 @@ var
 begin
   Result := 'john.doe';
 
+  // LOGNAME is POSIX, USER is BSD
   User := GetEnvironmentVariable('LOGNAME');
   if User = '' then
     User := GetEnvironmentVariable('USER');
+
+  { XXX fallback on fpgetuid + getpwnam? }
 
   Result := User;
 end;

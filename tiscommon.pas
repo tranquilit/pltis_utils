@@ -620,8 +620,16 @@ end;
 
 {$ifdef unix}
 function GetUserNameUnix: AnsiString;
+var
+  User: String;
 begin
   Result := 'john.doe';
+
+  User := GetEnvironmentVariable('LOGNAME');
+  if User = '' then
+    User := GetEnvironmentVariable('USER');
+
+  Result := User;
 end;
 {$endif}
 

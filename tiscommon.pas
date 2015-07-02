@@ -758,8 +758,30 @@ end;
 
 {$ifdef unix}
 function GetDomainNameUnix(): AnsiString;
+var
+  Res, Host: AnsiString;
 begin
-  Result := 'unknowndomain';
+  // Per RFC 6761
+  Result := 'invalid';
+
+  Res := unix.GetDomainName();
+  if Res = '(none)' then
+    Res := '';
+
+  if Res = '' then
+  begin
+    Host := gethostname();
+    if (Host <> '') and (Pos('.', Host) > 0) then
+      Res := Copy(Host, Pos('.', Host) + 1, 255);
+  end;
+
+  if Res = '' then
+  { XXX parse resolv.conf? }
+  ;
+
+  if Res <> '' then
+    Result := Res;
+
 end;
 {$endif}
 
@@ -942,8 +964,19 @@ end;
 
 {$ifdef unix}
 function GetComputerNameUnix : AnsiString;
+var
+  Host: AnsiString;
 begin
-  Result := gethostname();
+  Result := 'unknown';
+
+  Host := gethostname();
+  if (Host <> '') then
+  begin
+    if Pos('.', Host) > 1 then
+      Result := Copy(Host, 1, Pos('.', Host) - 1)
+    else
+      Result := Host;
+  end;
 end;
 {$endif}
 

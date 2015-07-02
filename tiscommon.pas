@@ -1207,7 +1207,7 @@ begin
       // select() error, did we get a signal?
       if (fpGetErrno() <> EsysEINTR) then
       begin
-        //writeln('error while connecting ', fpGetErrno());
+        logger('error within fpselect: ' + strerror(fpGetErrno()));
         Exit;
       end
     end

@@ -53,6 +53,7 @@ function GetDomainName: AnsiString;
 function UserInGroup(Group :DWORD) : Boolean;
 
 function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:integer=5000):boolean;
+function GetFreeLocalPort( portStart : Word = 5000; portEnd : Word = 10000):Word;
 function GetIPFromHost(const HostName: ansistring): ansistring;
 
 function MakePath(const parts:array of String):String;
@@ -313,7 +314,7 @@ begin
 end;
 
 //Unzip file to path, and return list of files as a string
-Procedure UnzipFile(ZipFilePath,OutputPath:Utf8String);
+procedure UnzipFile(ZipFilePath, OutputPath: Utf8String);
 var
   UnZipper: TUnZipper;
 begin
@@ -391,7 +392,8 @@ begin
 end;
 
 
-procedure UpdateCurrentApplication(fromURL:AnsiString;restart:Boolean;restartparam:AnsiString);
+procedure UpdateCurrentApplication(fromURL: AnsiString; Restart: Boolean;
+  restartparam: AnsiString);
 var
   bat: TextFile;
   tempdir,tempfn,updateBatch,fn,zipfn,version,destdir : AnsiString;
@@ -720,7 +722,7 @@ begin
 end;
 {$endif}
 
-function GetWorkGroupName(): AnsiString;
+function GetWorkgroupName: AnsiString;
 begin
   {$ifdef windows}
   Result := GetWorkGroupNameWindows();
@@ -1001,7 +1003,7 @@ begin
 end;
 
 {$ifdef windows}
-function GetApplicationVersion(Filename:Utf8String=''): Utf8String;
+function GetApplicationVersion(FileName: Utf8String): Utf8String;
 var
 	dwHandle, dwVersionSize : DWORD;
 	strSubBlock             : String;
@@ -1175,6 +1177,74 @@ begin
     WSACleanup;
   end;
 end;
+
+function GetFreeLocalPort( portStart : Word = 5000; portEnd : Word = 10000):Word;
+var
+  client    : sockaddr_in;
+  sock      : Integer;
+  ret       : Integer;
+  wsdata    : WSAData;
+  bResult   : Boolean;
+  trycount  : integer;
+  status    : LongInt;
+
+
+begin
+ try
+ ret := WSAStartup($0002, wsdata); //initiates use of the Winsock DLL
+ except
+  ret:=-1;
+ end;
+
+ if( ret <> 0 ) then
+  Exit;
+
+ bResult:=TRUE;
+ try
+  fillChar( client, sizeOf( client ), 0 );
+  client.sin_family      := AF_INET;  //Set the protocol to use , in this case (IPv4)
+  client.sin_addr.s_addr :=htonl(INADDR_LOOPBACK);
+  //inet_addr(PAnsiChar(ipAddressStr));  //convert to IN_ADDR  structure
+ except
+  bResult:=FALSE;
+ end;
+
+ if( bResult ) then
+ begin
+  trycount:=0;
+
+  while( trycount < (portEnd - portStart) ) do
+  begin
+   try
+    Result := portStart+Random(portEnd-portStart) ;
+    client.sin_port:=htons(result); //convert to TCP/IP network byte order (big-endian)
+    sock:=socket(AF_INET, SOCK_STREAM, IPPROTO_TCP );    //creates a socket
+    status:=connect(sock,client,sizeOf(client));
+    bResult:=(status <> 0); //establishes a connection to a specified socket, less than zero is NOT in use
+   except
+    bResult:=FALSE;
+   end;
+
+   if( sock <> 0 ) then
+   begin
+    closesocket(sock);
+    sock:=0;
+   end;
+
+   if( bResult ) then
+    Exit;
+   inc(trycount);
+  end;
+ end;
+
+ Result := 0;
+
+ try
+  WSACleanup();
+ except;
+ end;
+end;
+
 {$endif}
 
 {$ifdef unix}
@@ -1293,6 +1363,16 @@ begin
   end;
 
 end;
+
+function GetFreeLocalPort( portStart : Word = 5000; portEnd : Word = 10000):Word;
+begin
+  Result := portStart + random(portEnd-portStart);
+  while CheckOpenPort(Result,'127.0.0.1',500) do
+    Result := portStart + random(portEnd-portStart);
+
+end;
+
+
 {$endif}
 
 {$ifdef windows}
@@ -1340,7 +1420,8 @@ begin
 end;
 {$endif}
 
-function GetIPFromHost(const Hostname: AnsiString): AnsiString;
+
+function GetIPFromHost(const HostName: ansistring): ansistring;
 begin
   {$ifdef windows}
   Result := GetIPFromHostWindows(Hostname);

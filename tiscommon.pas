@@ -130,7 +130,7 @@ function StopServiceByName(const AServer, AServiceName: AnsiString):Boolean;
 
 implementation
 
-uses registry,FileUtil,tiswinhttp,tislogging,URIParser,Process,zipper
+uses registry,FileUtil,tiswinhttp,tislogging,Process,zipper
     {$ifdef windows}
     ,shlobj,winsock2,JwaTlHelp32,jwalmwksta,jwalmapibuf,JwaWinBase,
     jwalmaccess,jwalmcons,jwalmerr,JwaWinNT

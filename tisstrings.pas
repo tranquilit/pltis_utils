@@ -150,7 +150,7 @@ function StrIHasSuffix(const S: string; const Suffixes: array of string): Boolea
 function StrILastPos(const SubStr, S: string): SizeInt;
 function StrIPos(const SubStr, S: string): SizeInt;
 function StrIPrefixIndex(const S: string; const Prefixes: array of string): SizeInt;
-function StrIsOneOf(const S: string; const List: array of string): Boolean;
+function StrIsOneOf(const S: string; const List: array of string;CaseSensitive:Boolean=True): Boolean;
 function StrISuffixIndex(const S: string; const Suffixes: array of string): SizeInt;
 function StrLastPos(const SubStr, S: string): SizeInt;
 function StrMatch(const Substr, S: string; Index: SizeInt = 1): SizeInt;
@@ -623,9 +623,9 @@ begin
   end;
 end;
 
-function StrIsOneOf(const S: string; const List: array of string): Boolean;
+function StrIsOneOf(const S: string; const List: array of string;CaseSensitive:Boolean=True): Boolean;
 begin
-  Result := StrIndex(S, List) > -1;
+  Result := StrIndex(S, List,CaseSensitive) > -1;
 end;
 
 procedure StrAppend(var AList: TDynStringArray;const S: string);

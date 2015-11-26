@@ -307,7 +307,7 @@ end;
 function UserInGroup(Group: DWORD): Boolean;
 begin
   {$ifdef windows}
-  Result := UserInGroup(group);
+  Result := UserInGroupWindows(group);
   {$else}
   Result := UserInGroupUnix(Integer(Group));
   {$endif}
@@ -923,7 +923,13 @@ begin
     try
       result := StrToInt(tok1)-StrToInt(tok2);
     except
-      result := CompareStr(tok1,tok2);
+      tok1 := StrToken(v1,'-');
+      tok2 := StrToken(v2,'-');
+      try
+        result := StrToInt(tok1)-StrToInt(tok2)
+      except
+        result := CompareStr(tok1,tok2);
+      end;
     end;
     if (result<>0) or (tok1='') or (tok2='') then
       break;

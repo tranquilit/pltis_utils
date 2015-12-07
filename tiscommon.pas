@@ -1055,15 +1055,16 @@ var
   ContinueLoop: BOOL;
   FSnapshotHandle: THandle;
   FProcessEntry32: TProcessEntry32;
+  CurrentPId:LongWord;
 begin
   FSnapshotHandle := CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
   FProcessEntry32.dwSize := SizeOf(FProcessEntry32);
   ContinueLoop := Process32First(FSnapshotHandle, FProcessEntry32);
   Result := False;
-
+  CurrentPId:=longWord(GetCurrentProcessId);
   while integer(ContinueLoop) <> 0 do
   begin
-    if ((UpperCase(ExtractFileName(FProcessEntry32.szExeFile)) =
+    if (FProcessEntry32.th32ProcessID <> CurrentPId) and  ((UpperCase(ExtractFileName(FProcessEntry32.szExeFile)) =
       UpperCase(ExeFileName)) or (UpperCase(FProcessEntry32.szExeFile) =
       UpperCase(ExeFileName))) then
     begin

@@ -32,7 +32,7 @@ unit tiscommon;
 interface
 
 uses
-  Classes, SysUtils,tisstrings
+  Classes, SysUtils,tisstrings,Process
   {$ifdef windows}, windows {$endif}
   ;
 
@@ -57,7 +57,7 @@ function GetFreeLocalPort( portStart : Word = 5000; portEnd : Word = 10000):Word
 function GetIPFromHost(const HostName: ansistring): ansistring;
 
 function MakePath(const parts:array of String):String;
-function RunTask(cmd: utf8string;var ExitStatus:integer;WorkingDir:utf8String=''): utf8string;
+function RunTask(cmd: utf8string;var ExitStatus:integer;WorkingDir:utf8String='';DisableWow64FileSystemRedir:Boolean=False;ShowWindow:TShowWindowOptions=swoHIDE): utf8string;
 
 function GetSystemProductName: String;
 function GetSystemManufacturer: String;
@@ -88,6 +88,11 @@ function OnSystemAccount: Boolean;
 function GetGroups(srvName, usrName: WideString):TDynStringArray;
 
 function GetCmdParams(ID:String;Default:String=''):String;
+
+Function Wow64DisableWow64FsRedirection(Var Wow64FsEnableRedirection: LongBool): LongBool; StdCall;
+  External 'Kernel32.dll' Name 'Wow64DisableWow64FsRedirection';
+Function Wow64EnableWow64FsRedirection(Wow64FsEnableRedirection: LongBool): LongBool; StdCall;
+  External 'Kernel32.dll' Name 'Wow64EnableWow64FsRedirection';
 
 
 {Const
@@ -130,7 +135,7 @@ function StopServiceByName(const AServer, AServiceName: AnsiString):Boolean;
 
 implementation
 
-uses registry,FileUtil,tiswinhttp,tislogging,Process,zipper
+uses registry,FileUtil,tiswinhttp,tislogging,zipper
     {$ifdef windows}
     ,shlobj,winsock2,JwaTlHelp32,jwalmwksta,jwalmapibuf,JwaWinBase,
     jwalmaccess,jwalmcons,jwalmerr,JwaWinNT
@@ -1437,11 +1442,16 @@ begin
   {$endif}
 end;
 
-function RunTask(cmd: utf8string;var ExitStatus:integer;WorkingDir:utf8String=''): utf8string;
+function RunTask(cmd: utf8string;var ExitStatus:integer;WorkingDir:utf8String='';DisableWow64FileSystemRedir:Boolean=False;ShowWindow:TShowWindowOptions=swoHIDE): utf8string;
 var
   AProcess: TProcess;
   AStringList: TStringList;
+  Wow64FsEnableRedirection: LongBool;
 begin
+  if DisableWow64FileSystemRedir then
+    Wow64DisableWow64FsRedirection(Wow64FsEnableRedirection);
+
+  try
     AProcess := TProcess.Create(nil);
     AStringList := TStringList.Create;
     try
@@ -1449,6 +1459,7 @@ begin
       if WorkingDir<>'' then
         AProcess.CurrentDirectory := ExtractFilePath(cmd);
       AProcess.Options := AProcess.Options + [poStderrToOutPut, poWaitOnExit, poUsePipes];
+      AProcess.ShowWindow:=ShowWindow;
       AProcess.Execute;
       while AProcess.Running do;
       AStringList.LoadFromStream(AProcess.Output);
@@ -1458,6 +1469,11 @@ begin
       AStringList.Free;
       AProcess.Free;
     end;
+
+  finally
+    if DisableWow64FileSystemRedir then
+      Wow64EnableWow64FsRedirection(Wow64FsEnableRedirection);
+  end;
 end;
 
 

@@ -920,21 +920,27 @@ end;
 
 function CompareVersion(v1,v2:AnsiString):integer;
 var
-  tok1,tok2:AnsiString;
+  suite1,suite2,retry1,retry2,tok1,tok2:AnsiString;
 begin
+  suite1 := v1;
+  suite2 := v2;
   repeat
-    tok1 := StrToken(v1,'.');
-    tok2 := StrToken(v2,'.');
+    retry1 := suite1;
+    retry2 := suite2;
+    tok1 := StrToken(suite1,'.');
+    tok2 := StrToken(suite2,'.');
     if (tok1<>'') or (tok2<>'') then
     try
       result := StrToInt(tok1)-StrToInt(tok2);
     except
-      tok1 := StrToken(v1,'-');
-      tok2 := StrToken(v2,'-');
+      suite1 := retry1;
+      suite2 := retry2;
+      tok1 := StrToken(suite1,'-');
+      tok2 := StrToken(suite2,'-');
       try
         result := StrToInt(tok1)-StrToInt(tok2)
       except
-        result := CompareStr(tok1,tok2);
+        result := CompareStr(retry1,retry2);
       end;
     end;
     if (result<>0) or (tok1='') or (tok2='') then

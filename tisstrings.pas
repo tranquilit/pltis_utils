@@ -125,7 +125,8 @@ resourcestring
 
 type
   Float = Extended;
-  TDynStringArray        = array of Ansistring;
+  TDynStringArray        = array of string;
+  TDynUtf8StringArray        = array of Utf8string;
   TCharValidator = function(const C: Char): Boolean;
 
 function ArrayContainsChar(const Chars: array of Char; const C: Char): Boolean; overload;
@@ -241,6 +242,7 @@ procedure StringToFile(const FileName: string; const Contents: {$IFDEF COMPILER1
   Append: Boolean = False);
 
 function StrToken(var S: string; Separator: String): String;
+function StrToken(var S: Utf8string; Separator: Utf8String): Utf8String; overload;
 procedure StrTokenToStrings(S: string; Separator: String; const List: TStrings);
 function StrWord(const S: string; var Index: SizeInt; out Word: string): Boolean; overload;
 function StrWord(var S: PChar; out Word: string): Boolean; overload;
@@ -285,8 +287,10 @@ function CharLower(const C: Char): Char; {$IFDEF SUPPORTS_INLINE} inline; {$ENDI
 function CharUpper(const C: Char): Char; {$IFDEF SUPPORTS_INLINE} inline; {$ENDIF}
 function CharToggleCase(const C: Char): Char;
 
-function StrSplit(St: AnsiString; Sep: AnsiString): TDynStringArray;
+function StrSplit(St: String; Sep: String): TDynStringArray;
 function StrJoin(Sep: String; StrArray : TDynStringArray): String;
+function StrSplit(St: Utf8String; Sep: Utf8String): TDynUtf8StringArray; overload;
+function StrJoin(Sep: Utf8String; StrArray : TDynUtf8StringArray): Utf8String; overload;
 
 
 implementation
@@ -1929,6 +1933,23 @@ begin
   end;
 end;
 
+function StrToken(var S: Utf8String; Separator: Utf8String): Utf8String; overload;
+var
+  I: SizeInt;
+begin
+  I := Pos(Separator, S);
+  if I <> 0 then
+  begin
+    Result := Copy(S, 1, I - 1);
+    Delete(S, length(Separator), I);
+  end
+  else
+  begin
+    Result := S;
+    S := '';
+  end;
+end;
+
 
 function StrWord(const S: string; var Index: SizeInt; out Word: string): Boolean;
 var
@@ -1977,6 +1998,7 @@ begin
     end;
   end;
 end;
+
 
 function StrWord(var S: PChar; out Word: string): Boolean;
 var
@@ -2103,7 +2125,7 @@ end;
 
 procedure StrTokenToStrings(S: String; Separator: String; const List: TStrings);
 var
-  Token: String;
+  Token: Utf8String;
 begin
   Assert(List <> nil);
 
@@ -2137,9 +2159,9 @@ begin
     Result := nil;
 end;
 
-function StrSplit(St: AnsiString; Sep: AnsiString): TDynStringArray;
+function StrSplit(St: String; Sep: String): TDynStringArray;
 var
-  tok : AnsiString;
+  tok : String;
   len : integer;
 begin
   len := 0;
@@ -2156,6 +2178,37 @@ begin
 end;
 
 function StrJoin(Sep: String; StrArray: TDynStringArray): String;
+var
+  i:integer;
+begin
+  Result := '';
+  for i:=0 to length(StrArray)-1 do
+  begin
+    Result:=Result+StrArray[i];
+    if i<length(StrArray)-1 then
+      Result := Result+Sep;
+  end;
+end;
+
+function StrSplit(St: Utf8String; Sep: Utf8String): TDynUtf8StringArray; overload;
+var
+  tok : Utf8String;
+  len : integer;
+begin
+  len := 0;
+  SetLength(Result,0);
+  repeat
+    tok := StrToken(St,Sep);
+    if tok<>'' then
+    begin
+      inc(len);
+      SetLength(Result,len);
+      Result[len-1] := tok;
+    end;
+  until St='';
+end;
+
+function StrJoin(Sep: Utf8String; StrArray: TDynUtf8StringArray): Utf8String; overload;
 var
   i:integer;
 begin

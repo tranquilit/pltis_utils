@@ -40,23 +40,23 @@ Procedure UnzipFile(ZipFilePath,OutputPath:Utf8String);
 Procedure AddToUserPath(APath:Utf8String);
 procedure AddToSystemPath(APath:Utf8String);
 
-procedure UpdateCurrentApplication(fromURL:AnsiString;Restart:Boolean;restartparam:AnsiString);
-procedure UpdateApplication(fromURL:AnsiString;SetupExename,SetupParams,ExeName,RestartParam:AnsiString);
+procedure UpdateCurrentApplication(fromURL:Utf8String;Restart:Boolean;restartparam:Utf8String);
+procedure UpdateApplication(fromURL:Utf8String;SetupExename,SetupParams,ExeName,RestartParam:Utf8String);
 
-function SortableVersion(VersionString:AnsiString):AnsiString;
-function CompareVersion(v1,v2:AnsiString):integer;
+function SortableVersion(VersionString:Utf8String):Utf8String;
+function CompareVersion(v1,v2:Utf8String):integer;
 
-function GetComputerName : AnsiString;
-function GetUserName : AnsiString;
-function GetWorkgroupName: AnsiString;
-function GetDomainName: AnsiString;
+function GetComputerName : Utf8String;
+function GetUserName : Utf8String;
+function GetWorkgroupName: Utf8String;
+function GetDomainName: Utf8String;
 function UserInGroup(Group :DWORD) : Boolean;
 
 function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:integer=5000):boolean;
 function GetFreeLocalPort( portStart : Word = 5000; portEnd : Word = 10000):Word;
 function GetIPFromHost(const HostName: ansistring): ansistring;
 
-function MakePath(const parts:array of String):String;
+function MakePath(const parts:array of Utf8String):Utf8String;
 function RunTask(cmd: utf8string;var ExitStatus:integer;WorkingDir:utf8String='';ShowWindow:TShowWindowOptions=swoHIDE): utf8string;
 
 function GetSystemProductName: String;
@@ -68,26 +68,26 @@ function GetBIOSDate:AnsiString;
 {$ifdef windows}
 function  GetApplicationVersion(FileName:Utf8String=''): Utf8String;
 
-function GetPersonalFolder:AnsiString;
-function GetAppdataFolder:AnsiString;
+function GetPersonalFolder:Utf8String;
+function GetAppdataFolder:Utf8String;
 function GetStartMenuFolder: Utf8String;
 function GetCommonStartMenuFolder: Utf8String;
 function GetStartupFolder: Utf8String;
 function GetCommonStartupFolder: Utf8String;
 
-function GetUniqueTempdir(Prefix: String): String;
+function GetUniqueTempdir(Prefix: Utf8String): Utf8String;
 
-function Appuserinipath:AnsiString;
+function Appuserinipath:Utf8String;
 
 function GetCurrentUserSid: Ansistring;
 
-function UserLogin(user,password,domain:AnsiString):THandle;
+function UserLogin(user,password,domain:Utf8String):THandle;
 function UserDomain(htoken:THandle):AnsiString;
 function OnSystemAccount: Boolean;
 
 function GetGroups(srvName, usrName: WideString):TDynStringArray;
 
-function GetCmdParams(ID:String;Default:String=''):String;
+function GetCmdParams(ID:Utf8String;Default:Utf8String=''):Utf8String;
 
 {
 Function Wow64DisableWow64FsRedirection(Var Wow64FsEnableRedirection: LongBool): LongBool; StdCall;
@@ -136,7 +136,7 @@ function StopServiceByName(const AServer, AServiceName: AnsiString):Boolean;
 
 implementation
 
-uses registry,FileUtil,tiswinhttp,tislogging,zipper
+uses registry,LazFileUtils,LazUTF8, tiswinhttp,tislogging,zipper
     {$ifdef windows}
     ,shlobj,winsock2,JwaTlHelp32,jwalmwksta,jwalmapibuf,JwaWinType,JwaWinBase,
     jwalmaccess,jwalmcons,jwalmerr,JwaWinNT
@@ -146,7 +146,7 @@ uses registry,FileUtil,tiswinhttp,tislogging,zipper
     {$endif}
     ;
 
-function MakePath(const parts:array of String):String;
+function MakePath(const parts:array of Utf8String):Utf8String;
 var
   i:integer;
 begin
@@ -398,11 +398,11 @@ begin
 end;
 
 
-procedure UpdateCurrentApplication(fromURL: AnsiString; Restart: Boolean;
-  restartparam: AnsiString);
+procedure UpdateCurrentApplication(fromURL: Utf8String; Restart: Boolean;
+  restartparam: Utf8String);
 var
   bat: TextFile;
-  tempdir,tempfn,updateBatch,fn,zipfn,version,destdir : AnsiString;
+  tempdir,tempfn,updateBatch,fn,zipfn,version,destdir : Utf8String;
   files:TStringList;
   UnZipper: TUnZipper;
   i:integer;
@@ -412,9 +412,9 @@ begin
   Files := TStringList.Create;
   try
     Logger('Updating current application in place...');
-    tempdir := fileutil.GetTempFilename(GetTempDir,'waptget');
-    fn :=ExtractFileName(ParamStr(0));
-    destdir := ExtractFileDir(ParamStr(0));
+    tempdir := GetTempFilenameUtf8(GetTempDir,'waptget');
+    fn :=ExtractFileName(ParamStrUtf8(0));
+    destdir := ExtractFileDir(ParamStrUtf8(0));
 
     tempfn := AppendPathDelim(tempdir)+fn;
     mkdir(tempdir);
@@ -450,7 +450,7 @@ begin
       Logger(' got '+fn+' version: '+version);
     end;
 
-    if FileExists(tempfn) and (FileSize(tempfn)>0) then
+    if FileExistsUtf8(tempfn) and (FileSizeUtf8(tempfn)>0) then
     begin
       // small batch to replace current running application
       updatebatch := AppendPathDelim(tempdir) + 'update.bat';
@@ -498,10 +498,10 @@ begin
 {$endif}
 end;
 
-function GetUniqueTempdir(Prefix: String): String;
+function GetUniqueTempdir(Prefix: Utf8String): Utf8String;
 var
   I: Integer;
-  Start: String;
+  Start: Utf8String;
 begin
   Start:=GetTempDir;
   if (Prefix='') then
@@ -516,10 +516,10 @@ begin
 end;
 
 
-procedure UpdateApplication(fromURL:AnsiString;SetupExename,SetupParams,ExeName,RestartParam:AnsiString);
+procedure UpdateApplication(fromURL:Utf8String;SetupExename,SetupParams,ExeName,RestartParam:Utf8String);
 var
   bat: TextFile;
-  tempdir,tempfn,updateBatch,zipfn,version : AnsiString;
+  tempdir,tempfn,updateBatch,zipfn,version : Utf8String;
   files:TStringList;
   UnZipper: TUnZipper;
   i,hinstance:integer;
@@ -566,10 +566,10 @@ begin
       Logger(' got '+SetupExename+' version: '+version);
     end;
 
-    if FileExists(tempfn) and (FileSize(tempfn)>0) then
+    if FileExistsUtf8(tempfn) and (FileSizeUtf8(tempfn)>0) then
     begin
       // small batch to replace current running application
-      updatebatch := AppendPathDelim(tempdir) + AnsiString('update.bat');
+      updatebatch := AppendPathDelim(tempdir) + 'update.bat';
       AssignFile(bat,updateBatch);
       Rewrite(bat);
       try
@@ -610,15 +610,15 @@ begin
 end;
 
 {$ifdef windows}
-function GetUserNameWindows: AnsiString;
+function GetUserNameWindows: Utf8String;
 var
-	 pcUser   : PAnsiChar;
+	 pcUser   : PWideChar;
 	 dwUSize : DWORD;
 begin
-	 dwUSize := 21; // user name can be up to 20 characters
-	 GetMem( pcUser, dwUSize ); // allocate memory for the string
+	 dwUSize := 21 * SizeOf(WideChar); // user name can be up to 20 characters
+	 GetMem( pcUser, dwUSize); // allocate memory for the string
 	 try
-			if Windows.GetUserName( pcUser, dwUSize ) then
+			if Windows.GetUserNameW( pcUser, dwUSize ) then
 				 Result := pcUser;
 	 finally
 			FreeMem( pcUser ); // now free the memory allocated for the string
@@ -644,7 +644,7 @@ begin
 end;
 {$endif}
 
-function GetUserName: AnsiString;
+function GetUserName: Utf8String;
 begin
   {$ifdef windows}
   Result := GetUserNameWindows();
@@ -728,7 +728,7 @@ begin
 end;
 {$endif}
 
-function GetWorkgroupName: AnsiString;
+function GetWorkgroupName: Utf8String;
 begin
   {$ifdef windows}
   Result := GetWorkGroupNameWindows();
@@ -738,12 +738,12 @@ begin
 end;
 
 {$ifdef windows}
-function GetDomainNameWindows: AnsiString;
+function GetDomainNameWindows: Utf8String;
 var
   hProcess, hAccessToken: THandle;
-  InfoBuffer: PAnsiChar;
-  AccountName: array [0..UNLEN] of AnsiChar;
-  DomainName: array [0..UNLEN] of AnsiChar;
+  InfoBuffer: PWideChar;
+  AccountName: array [0..UNLEN] of WideChar;
+  DomainName: array [0..UNLEN] of WideChar;
 
   InfoBufferSize: Cardinal;
   AccountSize: Cardinal;
@@ -761,7 +761,7 @@ begin
     GetMem(InfoBuffer, InfoBufferSize);
     try
       if GetTokenInformation(hAccessToken, TokenUser, InfoBuffer, InfoBufferSize, InfoBufferSize) then
-        LookupAccountSid(nil, PSIDAndAttributes(InfoBuffer)^.sid, AccountName, AccountSize,
+        LookupAccountSidW(nil, PSIDAndAttributes(InfoBuffer)^.sid, AccountName, AccountSize,
                          DomainName, DomainSize, snu)
       else
         RaiseLastOSError;
@@ -776,9 +776,9 @@ end;
 {$endif}
 
 {$ifdef unix}
-function GetDomainNameUnix(): AnsiString;
+function GetDomainNameUnix(): WideString;
 var
-  Res, Host: AnsiString;
+  Res, Host: WideString;
 begin
   // Per RFC 6761
   Result := 'invalid';
@@ -804,7 +804,7 @@ begin
 end;
 {$endif}
 
-function GetDomainName(): AnsiString;
+function GetDomainName(): Utf8String;
 begin
   {$ifdef windows}
   Result := GetDomainNameWindows();
@@ -814,15 +814,15 @@ begin
 end;
 
 {$ifdef windows}
-function GetSpecialFolderLocation(csidl: Integer; ForceFolder: Boolean = False ): AnsiString;
+function GetSpecialFolderLocation(csidl: Integer; ForceFolder: Boolean = False ): WideString;
 var
   i: integer;
 begin
   SetLength( Result, MAX_PATH );
   if ForceFolder then
-    SHGetFolderPath( 0, csidl or CSIDL_FLAG_CREATE, 0, 0, PAnsiChar( Result ))
+    SHGetFolderPathW( 0, csidl or CSIDL_FLAG_CREATE, 0, 0, PWideChar( Result ))
   else
-    SHGetFolderPath( 0, csidl, 0, 0, PAnsiChar( Result ));
+    SHGetFolderPathW( 0, csidl, 0, 0, PWideChar( Result ));
 
   i := Pos( #0, Result );
   if i > 0 then SetLength( Result, Pred(i));
@@ -842,12 +842,12 @@ begin
   Registry.Free;
 end;
 
-function GetPersonalFolder:AnsiString;
+function GetPersonalFolder:Utf8String;
 begin
   result := GetSpecialFolderLocation(CSIDL_PERSONAL)
 end;
 
-function GetAppdataFolder:AnsiString;
+function GetAppdataFolder:Utf8String;
 begin
   result :=  GetSpecialFolderLocation(CSIDL_APPDATA);
 end;
@@ -872,15 +872,15 @@ begin
   result := GetSpecialFolderLocation(CSIDL_COMMON_STARTUP);
 end;
 
-function GetCurrentUser: AnsiString;
+function GetCurrentUser: Utf8String;
 var
-  charBuffer: array[0..128] of AnsiChar;
-  strnBuffer: AnsiString;
+  charBuffer: array[0..128] of WideChar;
+  strnBuffer: WideString;
   intgBufferSize: DWORD;
 begin
   intgBufferSize := 128;
   SetLength( strnBuffer, intgBufferSize );
-  if windows.GetUserName( charBuffer, intgBufferSize ) then
+  if windows.GetUserNameW( charBuffer, intgBufferSize ) then
   begin
     Result := StrPas( charBuffer );
   end
@@ -891,20 +891,20 @@ begin
 end;
 
 // to store use specific settings for this application
-function Appuserinipath:AnsiString;
+function Appuserinipath:Utf8String;
 var
-  dir : AnsiString;
+  dir : Utf8String;
 begin
   dir := IncludeTrailingPathDelimiter(GetAppdataFolder)+ApplicationName;
-  if not DirectoryExists(dir) then
+  if not DirectoryExistsUTF8(dir) then
     MkDir(dir);
   Result:=IncludeTrailingPathDelimiter(dir)+ApplicationName+'.ini';
 end;
 {$endif}
 
-function SortableVersion(VersionString: AnsiString): AnsiString;
+function SortableVersion(VersionString: Utf8String): Utf8String;
 var
-  version,tok : AnsiString;
+  version,tok : Utf8String;
 begin
   version := VersionString;
   tok := StrToken(version,'.');
@@ -918,9 +918,9 @@ begin
   until tok='';
 end;
 
-function CompareVersion(v1,v2:AnsiString):integer;
+function CompareVersion(v1,v2:Utf8String):integer;
 var
-  suite1,suite2,retry1,retry2,tok1,tok2:AnsiString;
+  suite1,suite2,retry1,retry2,tok1,tok2:Utf8String;
 begin
   suite1 := v1;
   suite2 := v2;
@@ -948,7 +948,7 @@ begin
   until (result<>0) or (tok1='') or (tok2='');
 end;
 
-procedure Logger(Msg: AnsiString;level:LogLevel=WARNING);
+procedure Logger(Msg: Utf8String;level:LogLevel=WARNING);
 begin
   if level>=currentLogLevel then
   begin
@@ -961,13 +961,13 @@ begin
 end;
 
 {$ifdef windows}
-function GetComputerNameWindows : AnsiString;
+function GetComputerNameWindows : WideString;
 var
-  buffer: array[0..255] of ansichar;
+  buffer: array[0..255] of WideChar;
   size: dword;
 begin
   size := 256;
-  if windows.GetComputerName(buffer, size) then
+  if windows.GetComputerNameW(@buffer, size) then
     Result := buffer
   else
     Result := ''
@@ -1011,7 +1011,7 @@ begin
 end;
 {$endif}
 
-function GetComputerName : AnsiString;
+function GetComputerName : Utf8String;
 begin
   {$ifdef windows}
   Result := GetComputerNameWindows();
@@ -1589,11 +1589,11 @@ begin
   end;
 end;
 
-function UserLogin(user,password,domain:AnsiString):THandle;
+function UserLogin(user,password,domain:Utf8String):THandle;
 var
   htok:THandle;
 begin
-  if not LogonUser(pAnsichar(user),pansichar(domain),pansichar(password),LOGON32_LOGON_NETWORK,LOGON32_PROVIDER_DEFAULT,htok) then
+  if not LogonUserW(pWidechar(user),pWidechar(domain),pWidechar(password),LOGON32_LOGON_NETWORK,LOGON32_PROVIDER_DEFAULT,htok) then
     raise EXCEPTION.Create('Unable to login as '+user+' on domain '+domain);
   result := htok;
 end;
@@ -1771,10 +1771,10 @@ begin
   end;
 end;
 
-function GetCmdParams(ID:String;Default:String=''):String;
+function GetCmdParams(ID:Utf8String;Default:Utf8String=''):Utf8String;
 var
 	i:integer;
-	S:String;
+	S:Utf8String;
   found:Boolean;
 begin
 	Result:='';
@@ -1783,8 +1783,8 @@ begin
 	begin
 		S:=ParamStr(i);
 		if
-			(AnsiCompareText(Copy(S, 1, Length(ID)+2), '/'+ID+'=') = 0) or
-			(AnsiCompareText(Copy(S, 1, Length(ID)+2), '-'+ID+'=') = 0) then
+			(UTF8CompareText(Copy(S, 1, Length(ID)+2), '/'+ID+'=') = 0) or
+			(UTF8CompareText(Copy(S, 1, Length(ID)+2), '-'+ID+'=') = 0) then
 		begin
       found:=True;
 			Result:=Copy(S,Length(ID)+2+1,MaxInt);

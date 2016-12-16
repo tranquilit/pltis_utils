@@ -814,22 +814,21 @@ begin
 end;
 
 {$ifdef windows}
-function GetSpecialFolderLocation(csidl: Integer; ForceFolder: Boolean = False ): WideString;
-var
-  i: integer;
-begin
-  SetLength( Result, MAX_PATH );
-  if ForceFolder then
-    SHGetFolderPathW( 0, csidl or CSIDL_FLAG_CREATE, 0, 0, PWideChar( Result ))
-  else
-    SHGetFolderPathW( 0, csidl, 0, 0, PWideChar( Result ));
 
-  i := Pos( #0, Result );
-  if i > 0 then SetLength( Result, Pred(i));
+function GetSpecialFolderLocation(csidl: Integer; ForceFolder: Boolean = False ): Utf8String;
+var
+  apath: Array[0..MAX_PATH] of Char;
+begin
+  GetAppdataFolder;
+  result := '';
+  FillChar(apath, MAX_PATH, 0);
+  if (ForceFolder and SUCCEEDED(SHGetFolderPath( 0, csidl or CSIDL_FLAG_CREATE, 0, 0, apath )))
+     or Succeeded(SHGetFolderPath( 0, csidl, 0, 0, apath)) then
+     Result := apath;
 
 end;
 
-function GetSendToFolder: AnsiString;
+function GetSendToFolder: Utf8String;
 var
   Registry: TRegistry;
 begin
@@ -875,11 +874,9 @@ end;
 function GetCurrentUser: Utf8String;
 var
   charBuffer: array[0..128] of WideChar;
-  strnBuffer: WideString;
   intgBufferSize: DWORD;
 begin
   intgBufferSize := 128;
-  SetLength( strnBuffer, intgBufferSize );
   if windows.GetUserNameW( charBuffer, intgBufferSize ) then
   begin
     Result := StrPas( charBuffer );

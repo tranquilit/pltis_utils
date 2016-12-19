@@ -23,8 +23,12 @@ unit tiscommon;
 # -----------------------------------------------------------------------
 }
 
-{$mode delphiunicode}
+{$mode objfpc}
+{$H+}
 {$codepage UTF8}
+
+{.$mode delphiunicode}
+{.$codepage UTF8}
 
 {.$mode delphi}
 {.$H+}
@@ -81,7 +85,7 @@ function Appuserinipath:Utf8String;
 
 function GetCurrentUserSid: Ansistring;
 
-function UserLogin(user,password,domain:Utf8String):THandle;
+function UserLogin(user,password,domain:String):THandle;
 function UserDomain(htoken:THandle):AnsiString;
 function OnSystemAccount: Boolean;
 
@@ -816,16 +820,25 @@ end;
 {$ifdef windows}
 
 function GetSpecialFolderLocation(csidl: Integer; ForceFolder: Boolean = False ): Utf8String;
-var
-  apath: Array[0..MAX_PATH] of Char;
+Var
+  APath : Array[0..MAX_PATH] of WideChar;
+  WS: UnicodeString;
+  Len: SizeInt;
+  hr: HRESULT;
 begin
-  GetAppdataFolder;
-  result := '';
-  FillChar(apath, MAX_PATH, 0);
-  if (ForceFolder and SUCCEEDED(SHGetFolderPath( 0, csidl or CSIDL_FLAG_CREATE, 0, 0, apath )))
-     or Succeeded(SHGetFolderPath( 0, csidl, 0, 0, apath)) then
-     Result := apath;
-
+  Result := '';
+  If (@SHGetFolderPathW <> Nil) then
+  begin
+    FillChar(APath{%H-}, SizeOf(APath), #0);
+    hr := SHGetFolderPathW(0,csidl or CSIDL_FLAG_CREATE,0,0, @APATH[0]);
+    if hr = S_OK then
+    begin
+      Len := StrLen(APath);
+      SetLength(WS, Len);
+      System.Move(APath[0], WS[1], Len * SizeOf(WideChar));
+      Result := AppendPathDelim(Utf8Decode(APath));
+    end;
+  end;
 end;
 
 function GetSendToFolder: Utf8String;
@@ -1586,12 +1599,12 @@ begin
   end;
 end;
 
-function UserLogin(user,password,domain:Utf8String):THandle;
+function UserLogin(user,password,domain:String):THandle;
 var
   htok:THandle;
 begin
-  if not LogonUserW(pWidechar(user),pWidechar(domain),pWidechar(password),LOGON32_LOGON_NETWORK,LOGON32_PROVIDER_DEFAULT,htok) then
-    raise EXCEPTION.Create('Unable to login as '+user+' on domain '+domain);
+  if not LogonUser(PAnsiChar(user),pAnsichar(domain),pAnsichar(password),LOGON32_LOGON_NETWORK,LOGON32_PROVIDER_DEFAULT,htok) then
+    raise EXCEPTION.Create('Unable to login as '+user+' on domain '+domain{$H-});
   result := htok;
 end;
 

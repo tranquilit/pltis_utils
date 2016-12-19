@@ -18,7 +18,7 @@
       </Other>
     </CompilerOptions>
     <Description Value="Various strings, datetime, etc routines"/>
-    <Version Minor="5"/>
+    <Version Major="1"/>
     <Files Count="8">
       <Item1>
         <Filename Value="tisutils.pas"/>

@@ -47,8 +47,8 @@ procedure AddToSystemPath(APath:Utf8String);
 procedure UpdateCurrentApplication(fromURL:Utf8String;Restart:Boolean;restartparam:Utf8String);
 procedure UpdateApplication(fromURL:Utf8String;SetupExename,SetupParams,ExeName,RestartParam:Utf8String);
 
-function SortableVersion(VersionString:Utf8String):Utf8String;
-function CompareVersion(v1,v2:Utf8String):integer;
+function SortableVersion(VersionString:String):String;
+function CompareVersion(v1,v2:String):integer;
 
 function GetComputerName : Utf8String;
 function GetUserName : Utf8String;
@@ -912,7 +912,7 @@ begin
 end;
 {$endif}
 
-function SortableVersion(VersionString: Utf8String): Utf8String;
+function SortableVersion(VersionString: String): String;
 var
   version,tok : Utf8String;
 begin
@@ -928,9 +928,9 @@ begin
   until tok='';
 end;
 
-function CompareVersion(v1,v2:Utf8String):integer;
+function CompareVersion(v1,v2:String):integer;
 var
-  suite1,suite2,retry1,retry2,tok1,tok2:Utf8String;
+  suite1,suite2,retry1,retry2,tok1,tok2:String;
 begin
   suite1 := v1;
   suite2 := v2;

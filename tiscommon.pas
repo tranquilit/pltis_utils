@@ -943,14 +943,19 @@ begin
     try
       result := StrToInt(tok1)-StrToInt(tok2);
     except
-      suite1 := retry1;
-      suite2 := retry2;
-      tok1 := StrToken(suite1,'-');
-      tok2 := StrToken(suite2,'-');
-      try
-        result := StrToInt(tok1)-StrToInt(tok2)
-      except
-        result := CompareStr(retry1,retry2);
+      if (tok1='') or (tok2='') then
+         result := CompareStr(tok1,tok2)
+      else
+      begin
+        suite1 := retry1;
+        suite2 := retry2;
+        tok1 := StrToken(suite1,'-');
+        tok2 := StrToken(suite2,'-');
+        try
+          result := StrToInt(tok1)-StrToInt(tok2)
+        except
+          result := CompareStr(retry1,retry2);
+        end;
       end;
     end;
     if (result<>0) or (tok1='') or (tok2='') then

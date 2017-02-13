@@ -37,7 +37,7 @@ interface
 
 uses
   Classes, SysUtils,tisstrings,Process
-  {$ifdef windows}, windows {$endif}
+  {$ifdef windows}, Windows,JwaWindows {$endif}
   ;
 
 Procedure UnzipFile(ZipFilePath,OutputPath:Utf8String);
@@ -56,6 +56,24 @@ function GetWorkgroupName: Utf8String;
 function GetDomainName: Utf8String;
 function UserInGroup(Group :DWORD) : Boolean;
 
+{$ifdef windows}
+function IsWin64: Boolean;
+
+function GetComputerNameExString(ANameFormat: COMPUTER_NAME_FORMAT): WideString;
+function EnablePrivilege(const Privilege: string; fEnable: Boolean; out PreviousState: Boolean): DWORD;
+function AddUser(const Server, User, Password: WideString): NET_API_STATUS;
+function DelUser(const Server, User: WideString): NET_API_STATUS;
+function RemoveFromGroup(const Server, User, Group: WideString): NET_API_STATUS;
+function GetAccountSid(const Server, User: WideString; var Sid: PSID): DWORD;
+function StrSIDToName(const StrSID: AnsiString; var Name: Ansistring; var SIDType: DWORD): Boolean;
+function AddToGroup(const Server, User, Group: WideString): NET_API_STATUS;
+function UserModalsGet(const Server: String): USER_MODALS_INFO_0;
+function DomainGet: String;
+function IsAdmin: LongBool;
+function GetAdminSid: PSID;
+
+{$endif}
+
 function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:integer=5000):boolean;
 function GetFreeLocalPort( portStart : Word = 5000; portEnd : Word = 10000):Word;
 function GetIPFromHost(const HostName: ansistring): ansistring;
@@ -63,14 +81,17 @@ function GetIPFromHost(const HostName: ansistring): ansistring;
 function MakePath(const parts:array of Utf8String):Utf8String;
 function RunTask(cmd: utf8string;var ExitStatus:integer;WorkingDir:utf8String='';ShowWindow:TShowWindowOptions=swoHIDE): utf8string;
 
+{$ifdef windows}
 function GetSystemProductName: String;
 function GetSystemManufacturer: String;
 function GetBIOSVendor: String;
 function GetBIOSVersion: String;
 function GetBIOSDate:AnsiString;
 
-{$ifdef windows}
 function  GetApplicationVersion(FileName:Utf8String=''): Utf8String;
+
+function GetOSVersionInfo: TOSVersionInfoEx;
+function IsWinXP:Boolean;
 
 
 function GetPersonalFolder:Utf8String;
@@ -156,10 +177,9 @@ function StopServiceByName(const AServer, AServiceName: AnsiString):Boolean;
 
 implementation
 
-uses registry,LazFileUtils,LazUTF8, tiswinhttp,tislogging,zipper
+uses registry,LazFileUtils,LazUTF8, zipper,tiswinhttp,tislogging
     {$ifdef windows}
-    ,shlobj,winsock2,JwaTlHelp32,jwalmwksta,jwalmapibuf,JwaWinType,JwaWinBase,
-    jwalmaccess,jwalmcons,jwalmerr,JwaWinNT
+    ,shlobj,winsock2
     {$endif}
     {$ifdef unix}
     , baseunix, cnetdb, errors, sockets, unix
@@ -305,19 +325,19 @@ end;
 function UserInGroupWindows(Group :DWORD) : Boolean;
 var
   pIdentifierAuthority :TSidIdentifierAuthority;
-  pSid : jwawinnt.PSID;
+  apSid : PSID;
   IsMember    : BOOL;
 begin
   pIdentifierAuthority := SECURITY_NT_AUTHORITY;
-  Result := AllocateAndInitializeSid(@pIdentifierAuthority,2, SECURITY_BUILTIN_DOMAIN_RID, Group, 0, 0, 0, 0, 0, 0, pSid);
+  Result := AllocateAndInitializeSid(@pIdentifierAuthority,2, SECURITY_BUILTIN_DOMAIN_RID, Group, 0, 0, 0, 0, 0, 0, apSid);
   try
     if Result then
-      if not CheckTokenMembership(0, pSid, IsMember) then //passing 0 means which the function will be use the token of the calling thread.
+      if not CheckTokenMembership(0, apSid, IsMember) then //passing 0 means which the function will be use the token of the calling thread.
          Result:= False
       else
          Result:=IsMember;
   finally
-     FreeSid(pSid);
+     FreeSid(apSid);
   end;
 end;
 {$endif}
@@ -339,21 +359,333 @@ begin
   {$endif}
 end;
 
-//Unzip file to path, and return list of files as a string
-procedure UnzipFile(ZipFilePath, OutputPath: Utf8String);
+{$ifdef windows}
+type
+  WinIsWow64 = function( Handle: THandle; var Iret: BOOL ): BOOL; stdcall;
+//from http://stackoverflow.com/questions/1436185/how-can-i-tell-if-im-running-on-x64
+function IsWin64: Boolean;
 var
-  UnZipper: TUnZipper;
+  HandleTo64BitsProcess: WinIsWow64;
+  Iret                 : BOOL;
 begin
-  UnZipper := TUnZipper.Create;
-  try
-    UnZipper.FileName := ZipFilePath;
-    UnZipper.OutputPath := OutputPath;
-    UnZipper.Examine;
-    UnZipper.UnZipAllFiles;
-  finally
-    UnZipper.Free;
+  Result := False;
+  HandleTo64BitsProcess := WinIsWow64(pointer( GetProcAddress(GetModuleHandle('kernel32.dll'), 'IsWow64Process')));
+  if Assigned(HandleTo64BitsProcess) then
+  begin
+    if not HandleTo64BitsProcess(GetCurrentProcess, Iret) then
+    Raise Exception.Create('Invalid handle');
+    Result := Iret;
   end;
 end;
+
+function GetComputerNameExString(ANameFormat: COMPUTER_NAME_FORMAT): WideString;
+var
+  nSize: DWORD;
+begin
+  nSize := 1024;
+  SetLength(Result, nSize);
+  if GetComputerNameExW(ANameFormat, PWideChar(Result), nSize) then
+    SetLength(Result, nSize)
+  else
+    Result := '';
+end;
+
+(*
+ * Procedure  : AddUser
+ * Author     : MPu
+ * Adds a local account
+ *)
+function AddUser(const Server, User, Password: WideString): NET_API_STATUS;
+const
+  DOMAIN_GROUP_RID_USERS = $00000201;
+var
+  ui3               : TUserInfo3;
+  NetError          : DWORD;
+begin
+//  ui3 := nil;
+  NetError := 0;
+  if User <> '' then
+  begin
+    ZeroMemory(@ui3, sizeof(TUserInfo3));
+    ui3.usri3_name := PWideChar(User);
+    ui3.usri3_password := PWideChar(Password);
+    ui3.usri3_primary_group_id := DOMAIN_GROUP_RID_USERS;
+    NetError := NetUserAdd(PWideChar(Server), 3, @ui3, nil);
+  end;
+  result := NetError;
+end;
+
+(*
+ * Procedure  : DelUser
+ * Author     : MPu
+ * Deletes a local account
+ *)
+function DelUser(const Server, User: WideString): NET_API_STATUS;
+var
+  NetError          : DWORD;
+begin
+  NetError := 0;
+  if (Server <> '') and (User <> '') then
+  begin
+    NetError := NetUserDel(PWideChar(Server), PWideChar(User));
+  end;
+  result := NetError;
+end;
+
+(*
+ * Procedure  : RemoveFromGroup
+ * Author     : MPu
+ * Removes a local account from a local group
+ *)
+function RemoveFromGroup(const Server, User, Group: WideString): NET_API_STATUS;
+var
+  Member            : PLocalGroupMembersInfo3;
+  NetError          : DWORD;
+begin
+  NetError := 0;
+  if (User <> '') and (Group <> '') and (Server <> '') then
+  begin
+    GetMem(Member, sizeof(TLocalGroupMembersInfo3));
+    try
+      Member^.lgrmi3_domainandname := PWideChar(copy(Server, 3, length(Server)) + '\' + User);
+      NetError := NetLocalGroupDelMembers(PWideChar(Server), PWideChar(Group), 3, @Member, 1);
+    finally
+      FreeMem(Member, sizeof(TLocalGroupMembersInfo3));
+    end;
+  end;
+  result := NetError;
+end;
+
+
+function GetAccountSid(const Server, User: WideString; var Sid: PSID): DWORD;
+var
+  dwDomainSize, dwSidSize: DWord;
+  R                 : LongBool;
+  wDomain           : WideString;
+  Use               : DWord;
+begin
+  Result := 0;
+  SetLastError(0);
+  dwSidSize := 0;
+  dwDomainSize := 0;
+  R := LookupAccountNameW(PWideChar(Server), PWideChar(User), nil, dwSidSize,
+    nil, dwDomainSize, Use);
+  if (not R) and (GetLastError = ERROR_INSUFFICIENT_BUFFER) then
+  begin
+    SetLength(wDomain, dwDomainSize);
+    Sid := GetMemory(dwSidSize);
+    R := LookupAccountNameW(PWideChar(Server), PWideChar(User), Sid,
+      dwSidSize, PWideChar(wDomain), dwDomainSize, Use);
+    if not R then
+    begin
+      FreeMemory(Sid);
+      Sid := nil;
+    end;
+  end
+  else
+    Result := GetLastError;
+end;
+
+(*
+ * Procedure  : StrSIDToName
+ * Author     : MPu
+ *)
+function StrSIDToName(const StrSID: AnsiString; var Name: Ansistring; var SIDType: DWORD): Boolean;
+var
+  SID               : PSID;
+  Buffer            : PAnsiChar;
+  NameLen, TempLen  : Cardinal;
+  err               : Boolean;
+begin
+  SID := nil;
+  err := ConvertStringSIDToSID(PChar(StrSID), SID);
+  if err then
+  begin
+    NameLen := 0;
+    TempLen := 0;
+    LookupAccountSidA(nil, SID, nil, NameLen, nil, TempLen, SIDType);
+    GetMem(Buffer, NameLen);
+    try
+      err := LookupAccountSidA(nil, SID, Buffer, NameLen, nil, TempLen, SIDType);
+      if err then
+        SetString(Name, Buffer, Namelen);
+    finally
+      FreeMem(Buffer);
+    end;
+  end;
+  if Assigned(SID) then
+    LocalFree(Cardinal(SID));
+  result := err;
+end;
+
+
+(*
+ * Procedure  : AddToGroup
+ * Author     : MPu
+ * Adds a local account to a local group
+ *)
+function AddToGroup(const Server, User, Group: WideString): NET_API_STATUS;
+var
+  pSID              : Pointer;
+  NetError          : DWORD;
+begin
+  pSID := nil;
+  NetError := 0;
+  if (User <> '') and (Group <> '')  then
+  begin
+    if (GetAccountSid(Server, User, pSID) = 0) and Assigned(pSID) then
+    begin
+      NetError := NetLocalGroupAddMembers(PWideChar(Server), PWideChar(Group), 0, @pSID, 1);
+      FreeMemory(pSID);
+      if NetError = 1378 then //Le nom de compte spécifié est déjà membre du groupe"
+        NetError := 0;
+    end
+    else
+      //L'utilisateur ou groupe global n'existe pas
+      NetError := 3783;
+  end;
+  result := NetError;
+end;
+
+(*
+ * Procedure  : UserModalsGet
+ * Author     : MPu
+ * Password stuff
+ *)
+function UserModalsGet(const Server: String): USER_MODALS_INFO_0;
+var
+  UserModalsInfo    : PUSER_MODALS_INFO_0;
+  dwRet             : DWORD;
+begin
+  UserModalsInfo := nil;
+  dwRet := NetUserModalsGet(nil, 0, Pointer(UserModalsInfo));
+  if ((dwRet = NERR_Success) and Assigned(UserModalsInfo)) then
+  begin
+    result.usrmod0_min_passwd_len := UserModalsInfo^.usrmod0_min_passwd_len;
+    result.usrmod0_max_passwd_age := UserModalsInfo^.usrmod0_max_passwd_age;
+    result.usrmod0_min_passwd_age := UserModalsInfo^.usrmod0_min_passwd_age;
+    result.usrmod0_force_logoff := UserModalsInfo^.usrmod0_force_logoff;
+    result.usrmod0_password_hist_len := UserModalsInfo^.usrmod0_password_hist_len;
+    NetApiBufferFree(UserModalsInfo);
+  end;
+end;
+
+function DomainGet: String;
+var
+  UserModalsInfo    : PUSER_MODALS_INFO_2;
+  dwRet             : DWORD;
+begin
+  UserModalsInfo := nil;
+  dwRet := NetUserModalsGet(nil, 2, Pointer(UserModalsInfo));
+  if ((dwRet = NERR_Success) and Assigned(UserModalsInfo)) then
+  begin
+    Result := UserModalsInfo^.usrmod2_domain_name;
+    //result.usrmod2_domain_id := UserModalsInfo^.usrmod2_domain_id;
+    NetApiBufferFree(UserModalsInfo);
+  end;
+end;
+
+function EnablePrivilege(const Privilege: string; fEnable: Boolean; out PreviousState: Boolean): DWORD;
+var
+  Token             : THandle;
+  NewState          : TTokenPrivileges;
+  Luid              : _LUID;
+  PrevState         : TTokenPrivileges;
+  Return            : DWORD;
+begin
+  PreviousState := True;
+  if (GetVersion() > $80000000) then
+    // Win9x
+    Result := ERROR_SUCCESS
+  else
+  begin
+    // WinNT
+    if not OpenProcessToken(GetCurrentProcess(), MAXIMUM_ALLOWED, Token) then
+      Result := GetLastError()
+    else
+    try
+      if not LookupPrivilegeValue(nil, PChar(Privilege), Luid) then
+        Result := GetLastError()
+      else
+      begin
+        NewState.PrivilegeCount := 1;
+        NewState.Privileges[0].Luid := Luid;
+        if fEnable then
+          NewState.Privileges[0].Attributes := SE_PRIVILEGE_ENABLED
+        else
+          NewState.Privileges[0].Attributes := 0;
+        if not AdjustTokenPrivileges(Token, False, @NewState,
+          SizeOf(TTokenPrivileges), @PrevState, @Return) then
+          Result := GetLastError()
+        else
+        begin
+          Result := ERROR_SUCCESS;
+          PreviousState :=
+            (PrevState.Privileges[0].Attributes and SE_PRIVILEGE_ENABLED <> 0);
+        end;
+      end;
+    finally
+      CloseHandle(Token);
+    end;
+  end;
+end;
+
+
+function GetAdminSid: PSID;
+// Author       : Nico Bendlin
+const
+  // bekannte SIDs ... (WinNT.h)
+  SECURITY_NT_AUTHORITY: TSIDIdentifierAuthority = (Value: (0, 0, 0, 0, 0, 5));
+  // bekannte RIDs ... (WinNT.h)
+  SECURITY_BUILTIN_DOMAIN_RID: DWORD = $00000020;
+  DOMAIN_ALIAS_RID_ADMINS: DWORD = $00000220;
+begin
+  Result := nil;
+  AllocateAndInitializeSid(@SECURITY_NT_AUTHORITY, 2,
+    SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_ADMINS,
+    0, 0, 0, 0, 0, 0, Result);
+end;
+
+function IsAdmin: LongBool;
+// Author       : Nico Bendlin
+var
+  TokenHandle       : THandle;
+  ReturnLength      : DWORD;
+  TokenInformation  : PTokenGroups;
+  AdminSid          : PSID;
+  Loop              : Integer;
+begin
+  Result := False;
+  TokenHandle := 0;
+  if OpenProcessToken(GetCurrentProcess, TOKEN_QUERY, TokenHandle) then
+  try
+    ReturnLength := 0;
+    GetTokenInformation(TokenHandle, TokenGroups, nil, 0, ReturnLength);
+    TokenInformation := GetMemory(ReturnLength);
+    if Assigned(TokenInformation) then
+    try
+      if GetTokenInformation(TokenHandle, TokenGroups, TokenInformation,
+        ReturnLength, ReturnLength) then
+      begin
+        AdminSid := GetAdminSid;
+        for Loop := 0 to TokenInformation^.GroupCount - 1 do
+        begin
+          if EqualSid(TokenInformation^.Groups[Loop].Sid, AdminSid) then
+          begin
+            Result := True;
+            Break;
+          end;
+        end;
+        FreeSid(AdminSid);
+      end;
+    finally
+      FreeMemory(TokenInformation);
+    end;
+  finally
+    CloseHandle(TokenHandle);
+  end;
+end;
+
 
 procedure AddToUserPath(APath:Utf8String);
 var
@@ -376,7 +708,6 @@ begin
   end;
 end;
 
-{$ifdef windows}
 procedure AddToSystemPathWindows(APath:Utf8String);
 var
   SystemPath : Utf8String;
@@ -400,6 +731,24 @@ begin
   end;
 end;
 {$endif}
+
+
+//Unzip file to path, and return list of files as a string
+procedure UnzipFile(ZipFilePath, OutputPath: Utf8String);
+var
+  UnZipper: TUnZipper;
+begin
+  UnZipper := TUnZipper.Create;
+  try
+    UnZipper.FileName := ZipFilePath;
+    UnZipper.OutputPath := OutputPath;
+    UnZipper.Examine;
+    UnZipper.UnZipAllFiles;
+  finally
+    UnZipper.Free;
+  end;
+end;
+
 
 {$ifdef unix}
 procedure AddToSystemPathUnix(APath: Utf8String);
@@ -638,7 +987,7 @@ begin
 	 dwUSize := 21 * SizeOf(WideChar); // user name can be up to 20 characters
 	 GetMem( pcUser, dwUSize); // allocate memory for the string
 	 try
-			if Windows.GetUserNameW( pcUser, dwUSize ) then
+			if GetUserNameW( pcUser, dwUSize ) then
 				 Result := pcUser;
 	 finally
 			FreeMem( pcUser ); // now free the memory allocated for the string
@@ -925,7 +1274,7 @@ var
   intgBufferSize: DWORD;
 begin
   intgBufferSize := 128;
-  if windows.GetUserNameW( charBuffer, intgBufferSize ) then
+  if GetUserNameW( charBuffer, intgBufferSize ) then
   begin
     Result := StrPas( charBuffer );
   end
@@ -1011,6 +1360,26 @@ begin
 end;
 
 {$ifdef windows}
+
+function GetOSVersionInfo: TOSVersionInfoEx;
+begin
+  FillChar(Result, SizeOf(TOSVersionInfoEx), 0);
+  Result.dwOSVersionInfoSize := SizeOf(TOSVersionInfoEx);
+  if not GetVersionEx(POSVersionInfo(@Result)) then
+    Result.dwOSVersionInfoSize := 0;
+end;
+
+function IsWinXP:Boolean;
+var
+  Info : TOSVersionInfoEx;
+begin
+  Result := False;
+  info := GetOSVersionInfo;
+  if info.dwOSVersionInfoSize>0 then
+    result := (Info.dwPlatformId = VER_PLATFORM_WIN32_NT) and
+              (Info.dwMajorVersion = 5) and (Info.dwMinorVersion = 1)
+end;
+
 function GetComputerNameWindows : WideString;
 var
   buffer: array[0..255] of WideChar;
@@ -1574,7 +1943,7 @@ function StartServiceByName(const AServer,AServiceName: AnsiString):Boolean;
 var
   ServiceHandle,
   SCMHandle: DWORD;
-  p: LPPCSTR;
+  p: PAnsiChar;
 begin
   p:=nil;
   Result:=False;

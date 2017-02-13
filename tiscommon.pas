@@ -72,6 +72,7 @@ function GetBIOSDate:AnsiString;
 {$ifdef windows}
 function  GetApplicationVersion(FileName:Utf8String=''): Utf8String;
 
+
 function GetPersonalFolder:Utf8String;
 function GetAppdataFolder:Utf8String;
 function GetStartMenuFolder: Utf8String;
@@ -83,6 +84,19 @@ function GetUniqueTempdir(Prefix: Utf8String): Utf8String;
 
 function Appuserinipath:Utf8String;
 
+const
+  NameUnknown       = 0; // Unknown name type.
+  NameFullyQualifiedDN = 1; // Fully qualified distinguished name
+  NameSamCompatible = 2; // Windows NT® 4.0 account name
+  NameDisplay       = 3; // A "friendly" display name
+  NameUniqueId      = 6; // GUID string that the IIDFromString function returns
+  NameCanonical     = 7; // Complete canonical name
+  NameUserPrincipal = 8; // User principal name
+  NameCanonicalEx   = 9;
+  NameServicePrincipal = 10; // Generalized service principal name
+  DNSDomainName     = 11; // DNS domain name, plus the user name
+
+function GetCurrentUserName(fFormat: DWORD=NameSamCompatible) : Ansistring;
 function GetCurrentUserSid: Ansistring;
 
 function UserLogin(user,password,domain:String):THandle;
@@ -90,6 +104,8 @@ function UserDomain(htoken:THandle):AnsiString;
 function OnSystemAccount: Boolean;
 
 function GetGroups(srvName, usrName: WideString):TDynStringArray;
+function GetLocalGroups:TDynStringArray;
+function GetLocalGroupMembers(GroupName:WideString):TDynStringArray;
 
 function GetCmdParams(ID:Utf8String;Default:Utf8String=''):Utf8String;
 
@@ -854,6 +870,25 @@ begin
   Registry.Free;
 end;
 
+function GetUserNameEx(NameFormat: DWORD; lpNameBuffer: LPSTR; var nSize: DWORD): Boolean; stdcall; external
+  'secur32.dll' Name 'GetUserNameExA';
+
+function GetCurrentUserName(fFormat: DWORD=NameSamCompatible) : Ansistring;
+const
+  cnMaxUserNameLen = 254;
+var
+  sUserName     : Ansistring;
+  dwUserNameLen : DWord;
+begin
+  dwUserNameLen := cnMaxUserNameLen-1;
+  SetLength( sUserName, cnMaxUserNameLen );
+  GetUserNameEx(fFormat,
+    PChar( sUserName ),
+    dwUserNameLen );
+  SetLength( sUserName, dwUserNameLen );
+  Result := sUserName;
+end;
+
 function GetPersonalFolder:Utf8String;
 begin
   result := GetSpecialFolderLocation(CSIDL_PERSONAL)
@@ -1597,6 +1632,54 @@ begin
     begin
       SetLength(result,length(result)+1);
       result[length(result)-1] := pInfo^.grpi0_name;
+      Inc(pInfo);
+      Dec(dwEntriesRead);
+    end;
+    NetAPIBufferFree(grpi0);
+  end;
+end;
+
+function GetLocalGroups:TDynStringArray;
+var
+  dwEntriesRead, dwEntriesTotal,resumehandle: DWORD;
+  grpi0: Pointer;
+  pInfo: PGroupInfo0;
+  nErr: Integer;
+begin
+  SetLength(Result,0);
+  resumehandle := 0;
+  nErr := NetLocalGroupEnum (Nil, 0, grpi0,MAX_PREFERRED_LENGTH, @dwEntriesRead, @dwEntriesTotal,Nil);
+  if nErr = NERR_SUCCESS then
+  begin
+    pInfo := grpi0;
+    while dwEntriesRead > 0 do
+    begin
+      SetLength(result,length(result)+1);
+      result[length(result)-1] := pInfo^.grpi0_name;
+      Inc(pInfo);
+      Dec(dwEntriesRead);
+    end;
+    NetAPIBufferFree(grpi0);
+  end;
+end;
+
+function GetLocalGroupMembers(GroupName:WideString):TDynStringArray;
+var
+  dwEntriesRead, dwEntriesTotal,resumehandle: DWORD;
+  grpi0: Pointer;
+  pInfo: PLOCALGROUP_MEMBERS_INFO_3;
+  nErr: Integer;
+begin
+  SetLength(Result,0);
+  resumehandle := 0;
+  nErr := NetLocalGroupGetMembers(Nil,PWideChar(GroupName),3,grpi0,MAX_PREFERRED_LENGTH, @dwEntriesRead, @dwEntriesTotal,Nil);
+  if nErr = NERR_SUCCESS then
+  begin
+    pInfo := grpi0;
+    while dwEntriesRead > 0 do
+    begin
+      SetLength(result,length(result)+1);
+      result[length(result)-1] := pInfo^.lgrmi3_domainandname;
       Inc(pInfo);
       Dec(dwEntriesRead);
     end;

@@ -291,11 +291,12 @@ function StrSplit(St: String; Sep: String): TDynStringArray;
 function StrJoin(Sep: String; StrArray : TDynStringArray): String;
 function StrSplit(St: Utf8String; Sep: Utf8String): TDynUtf8StringArray; overload;
 function StrJoin(Sep: Utf8String; StrArray : TDynUtf8StringArray): Utf8String; overload;
+function StrSplitLines(St: Utf8String): TDynUtf8StringArray;
 
 
 implementation
 
-uses character;
+uses character,StrUtils;
 
 function ArrayContainsChar(const Chars: array of Char; const C: Char): Boolean;
 var
@@ -2219,6 +2220,14 @@ begin
     if i<length(StrArray)-1 then
       Result := Result+Sep;
   end;
+end;
+
+function StrSplitLines(St: Utf8String): TDynUtf8StringArray;
+var
+  st2:UTF8String;
+begin
+  St2 := StringsReplace(St,[#13#10,#13,#10],[#13,#13,#13],[rfReplaceAll]);
+  Result := StrSplit(st2,#13);
 end;
 
 

@@ -425,7 +425,7 @@ var
   NetError          : DWORD;
 begin
   NetError := 0;
-  if (Server <> '') and (User <> '') then
+  if (User <> '') then
   begin
     NetError := NetUserDel(PWideChar(Server), PWideChar(User));
   end;
@@ -439,18 +439,17 @@ end;
  *)
 function RemoveFromGroup(const Server, User, Group: WideString): NET_API_STATUS;
 var
-  Member            : PLocalGroupMembersInfo3;
+  Member            : TLocalGroupMembersInfo3;
   NetError          : DWORD;
 begin
   NetError := 0;
-  if (User <> '') and (Group <> '') and (Server <> '') then
+  if (User <> '') and (Group <> '') then
   begin
-    GetMem(Member, sizeof(TLocalGroupMembersInfo3));
     try
-      Member^.lgrmi3_domainandname := PWideChar(copy(Server, 3, length(Server)) + '\' + User);
+      //Member^.lgrmi3_domainandname := PWideChar(copy(Server, 3, length(Server)) + '\' + User);
+      Member.lgrmi3_domainandname := PWideChar(User);
       NetError := NetLocalGroupDelMembers(PWideChar(Server), PWideChar(Group), 3, @Member, 1);
     finally
-      FreeMem(Member, sizeof(TLocalGroupMembersInfo3));
     end;
   end;
   result := NetError;

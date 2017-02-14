@@ -60,6 +60,9 @@ function UserInGroup(Group :DWORD) : Boolean;
 function IsWin64: Boolean;
 
 function GetComputerNameExString(ANameFormat: COMPUTER_NAME_FORMAT): WideString;
+procedure SetComputerName(newname:WideString);
+procedure SetComputerNameEx(newname:WideString;ANameFormat: COMPUTER_NAME_FORMAT );
+
 function EnablePrivilege(const Privilege: string; fEnable: Boolean; out PreviousState: Boolean): DWORD;
 function AddUser(const Server, User, Password: WideString): NET_API_STATUS;
 function DelUser(const Server, User: WideString): NET_API_STATUS;
@@ -389,6 +392,19 @@ begin
   else
     Result := '';
 end;
+
+procedure SetComputerNameEx(newname:WideString;ANameFormat: COMPUTER_NAME_FORMAT );
+begin
+  if not SetComputerNameExW(ANameFormat, PWideChar(newname)) then
+    Raise Exception.Create('Unable to set new hostname');
+end;
+
+procedure SetComputerName(newname:WideString);
+begin
+  if not SetComputerNameW(PWideChar(newname)) then
+    Raise Exception.Create('Unable to set new hostname');
+end;
+
 
 (*
  * Procedure  : AddUser

@@ -69,9 +69,11 @@ function DelUser(const Server, User: WideString): NET_API_STATUS;
 function RemoveFromGroup(const Server, User, Group: WideString): NET_API_STATUS;
 function GetAccountSid(const Server, User: WideString; var Sid: PSID): DWORD;
 function StrSIDToName(const StrSID: AnsiString; var Name: Ansistring; var SIDType: DWORD): Boolean;
-function AddToGroup(const Server, User, Group: WideString): NET_API_STATUS;
+function AddToGroup(const Domain, User, Group: WideString): NET_API_STATUS;
 function UserModalsGet(const Server: String): USER_MODALS_INFO_0;
 function DomainGet: String;
+function GetJoinInformation:String;
+
 function IsAdmin: LongBool;
 function GetAdminSid: PSID;
 
@@ -90,6 +92,9 @@ function GetSystemManufacturer: String;
 function GetBIOSVendor: String;
 function GetBIOSVersion: String;
 function GetBIOSDate:AnsiString;
+
+procedure SetComputerDescription(desc:WideString);
+function ComputerDescription:WideString;
 
 function  GetApplicationVersion(FileName:Utf8String=''): Utf8String;
 
@@ -290,6 +295,43 @@ begin
     reg.Free;
   end;
 end;
+
+function ComputerDescription:WideString;
+var
+  reg: TRegistry;
+  s: WideString;
+begin
+  reg := TRegistry.Create;
+  try
+    reg.RootKey:=HKEY_LOCAL_MACHINE;
+    if reg.OpenKeyReadOnly('System\CurrentControlSet\Services\lanmanserver\parameters') then
+    begin
+      s:=reg.ReadString('srvcomment');
+      Result := s;
+    end
+    else
+      Result :='';
+  finally
+    reg.Free;
+  end;
+end;
+
+
+procedure SetComputerDescription(desc:WideString);
+var
+  reg : TRegistry;
+begin
+  reg := TRegistry.Create;
+  try
+    reg.RootKey:=HKEY_LOCAL_MACHINE;
+    if reg.OpenKey('System\CurrentControlSet\Services\lanmanserver\parameters',False) then
+      reg.WriteString('srvcomment',desc)
+  finally
+    reg.Free;
+  end;
+end;
+
+
 
 {$ifdef windows}
 function GetBIOSDateWindows: AnsiString;
@@ -539,7 +581,7 @@ end;
  * Author     : MPu
  * Adds a local account to a local group
  *)
-function AddToGroup(const Server, User, Group: WideString): NET_API_STATUS;
+function AddToGroup(const domain,User, Group: WideString): NET_API_STATUS;
 var
   pSID              : Pointer;
   NetError          : DWORD;
@@ -548,16 +590,14 @@ begin
   NetError := 0;
   if (User <> '') and (Group <> '')  then
   begin
-    if (GetAccountSid(Server, User, pSID) = 0) and Assigned(pSID) then
+    NetError := GetAccountSid(domain, User, pSID);
+    if ( NetError = 0) and Assigned(pSID) then
     begin
-      NetError := NetLocalGroupAddMembers(PWideChar(Server), PWideChar(Group), 0, @pSID, 1);
+      NetError := NetLocalGroupAddMembers(Nil, PWideChar(Group), 0, @pSID, 1);
       FreeMemory(pSID);
       if NetError = 1378 then //Le nom de compte spécifié est déjà membre du groupe"
         NetError := 0;
     end
-    else
-      //L'utilisateur ou groupe global n'existe pas
-      NetError := 3783;
   end;
   result := NetError;
 end;
@@ -597,6 +637,20 @@ begin
     Result := UserModalsInfo^.usrmod2_domain_name;
     //result.usrmod2_domain_id := UserModalsInfo^.usrmod2_domain_id;
     NetApiBufferFree(UserModalsInfo);
+  end;
+end;
+
+function GetJoinInformation:String;
+var
+  name: LPWSTR;
+  status: NETSETUP_JOIN_STATUS;
+begin
+  Result := '';
+  if NetGetJoinInformation(Nil,name,@status)=NERR_Success then
+  begin
+    if status=NetSetupDomainName then
+      Result := name;
+    NetApiBufferFree(name);
   end;
 end;
 
@@ -1521,6 +1575,7 @@ begin
   CloseHandle(FSnapshotHandle);
 end;
 
+
 function KillTask(ExeFileName: string): integer;
 const
   PROCESS_TERMINATE=$0001;
@@ -1959,6 +2014,8 @@ var
   ServiceHandle,
   SCMHandle: DWORD;
   p: PAnsiChar;
+  ts:TDateTime;
+  SS:SERVICE_STATUS;
 begin
   p:=nil;
   Result:=False;
@@ -1968,8 +2025,18 @@ begin
   try
     ServiceHandle:=OpenService(SCMHandle,PAnsiChar(AServiceName),SERVICE_ALL_ACCESS);
     if ServiceHandle <> 0 then
+    begin
       Result:=StartService(ServiceHandle,0,p);
-
+      if Result then
+      begin
+        ts := Now;
+        repeat
+          ResetMemory(SS, SizeOf(SS));
+          QueryServiceStatus(ServiceHandle,SS);
+        until (SS.dwCurrentState = SERVICE_RUNNING) or ((Now-ts)> 5/24/3600);
+        Result := SS.dwCurrentState = SERVICE_RUNNING;
+      end;
+    end;
     CloseServiceHandle(ServiceHandle);
   finally
     CloseServiceHandle(SCMHandle);
@@ -1980,7 +2047,8 @@ function StopServiceByName(const AServer, AServiceName: AnsiString):Boolean;
 var
   ServiceHandle,
   SCMHandle: DWORD;
-  SS: _Service_Status;
+  SS: SERVICE_STATUS;
+  ts:TDateTime;
 begin
   Result := False;
 
@@ -1992,8 +2060,16 @@ begin
     begin
       ResetMemory(SS, SizeOf(SS));
       Result := ControlService(ServiceHandle, SERVICE_CONTROL_STOP, SS);
+      if Result then
+      begin
+        ts := Now;
+        repeat
+          ResetMemory(SS, SizeOf(SS));
+          QueryServiceStatus(ServiceHandle,SS);
+        until (SS.dwCurrentState = SERVICE_STOPPED) or ((Now-ts)> 5/24/3600);
+        Result := SS.dwCurrentState = SERVICE_STOPPED;
+      end;
     end;
-
     CloseServiceHandle(ServiceHandle);
   finally
     CloseServiceHandle(SCMHandle);
@@ -2224,6 +2300,8 @@ begin
   end;
 
 end;
+
+
 
 function GetCurrentUserSid: Ansistring;
 var

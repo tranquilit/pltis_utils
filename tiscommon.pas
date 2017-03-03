@@ -69,7 +69,7 @@ function DelUser(const Server, User: WideString): NET_API_STATUS;
 function RemoveFromGroup(const Server, User, Group: WideString): NET_API_STATUS;
 function GetAccountSid(const Server, User: WideString; var Sid: PSID): DWORD;
 function StrSIDToName(const StrSID: AnsiString; var Name: Ansistring; var SIDType: DWORD): Boolean;
-function AddToGroup(const Domain, User, Group: WideString): NET_API_STATUS;
+function AddToGroup(const member, Group: WideString): NET_API_STATUS;
 function UserModalsGet(const Server: String): USER_MODALS_INFO_0;
 function DomainGet: String;
 function GetJoinInformation:String;
@@ -579,25 +579,21 @@ end;
 (*
  * Procedure  : AddToGroup
  * Author     : MPu
- * Adds a local account to a local group
+ * Adds a domain account to a local group
  *)
-function AddToGroup(const domain,User, Group: WideString): NET_API_STATUS;
+function AddToGroup(const member, Group: WideString): NET_API_STATUS;
 var
-  pSID              : Pointer;
+  memberInfo             : LOCALGROUP_MEMBERS_INFO_3;
   NetError          : DWORD;
+
 begin
-  pSID := nil;
   NetError := 0;
-  if (User <> '') and (Group <> '')  then
+  if (member <> '') and (Group <> '')  then
   begin
-    NetError := GetAccountSid(domain, User, pSID);
-    if ( NetError = 0) and Assigned(pSID) then
-    begin
-      NetError := NetLocalGroupAddMembers(Nil, PWideChar(Group), 0, @pSID, 1);
-      FreeMemory(pSID);
-      if NetError = 1378 then //Le nom de compte spécifié est déjà membre du groupe"
-        NetError := 0;
-    end
+    memberInfo.lgrmi3_domainandname:=PWideChar(member);
+    NetError := NetLocalGroupAddMembers(Nil, PWideChar(Group), 3, @memberInfo, 1);
+    if NetError = 1378 then //Le nom de compte spécifié est déjà membre du groupe"
+      NetError := 0;
   end;
   result := NetError;
 end;
@@ -646,6 +642,7 @@ var
   status: NETSETUP_JOIN_STATUS;
 begin
   Result := '';
+  Name := Nil;
   if NetGetJoinInformation(Nil,name,@status)=NERR_Success then
   begin
     if status=NetSetupDomainName then

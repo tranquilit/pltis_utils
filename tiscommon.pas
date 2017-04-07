@@ -103,6 +103,7 @@ function IsWinXP:Boolean;
 
 
 function GetPersonalFolder:Utf8String;
+function GetLocalAppdataFolder:Utf8String;
 function GetAppdataFolder:Utf8String;
 function GetStartMenuFolder: Utf8String;
 function GetCommonStartMenuFolder: Utf8String;
@@ -1308,6 +1309,12 @@ function GetPersonalFolder:Utf8String;
 begin
   result := GetSpecialFolderLocation(CSIDL_PERSONAL)
 end;
+
+function GetLocalAppdataFolder:Utf8String;
+begin
+  result :=  GetSpecialFolderLocation(CSIDL_LOCAL_APPDATA);
+end;
+
 
 function GetAppdataFolder:Utf8String;
 begin

@@ -51,7 +51,7 @@ type
       constructor Create(const msg: string;AHTTPStatus:Integer);
     end;
 
-function wget(const fileURL, DestFileName: Utf8String; CBReceiver:TObject=Nil;progressCallback:TProgressCallback=Nil;enableProxy:Boolean=False;forceReload:Boolean=True): boolean;
+function wget(const fileURL, DestFileName: Utf8String; CBReceiver:TObject=Nil;progressCallback:TProgressCallback=Nil;enableProxy:Boolean=False;forceReload:Boolean=True;const UserAgent: ansistring=''): boolean;
 
 function httpGetHeaders(url: ansistring; enableProxy:Boolean= False;
    ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString=''):RawByteString;
@@ -68,11 +68,20 @@ implementation
 
 uses URIParser,FileUtil,JwaWinType,JwaWinBase;
 
-Function wget(const fileURL, DestFileName: Utf8String; CBReceiver:TObject=Nil;progressCallback:TProgressCallback=Nil;enableProxy:Boolean=False;forceReload:Boolean=True): boolean;
+Function GetHttpAgent:ansistring;
+var
+  sAppName: AnsiString;
+begin
+  sAppName := ExtractFileName(ParamStr(0));
+  Result := sAppName+' '+GetFileDescription(ParamStr(0));
+
+end;
+
+Function wget(const fileURL, DestFileName: Utf8String; CBReceiver:TObject=Nil;progressCallback:TProgressCallback=Nil;enableProxy:Boolean=False;forceReload:Boolean=True;const UserAgent: ansistring=''): boolean;
  const
    BufferSize = 1024*512;
  var
-   hSession, hURL: HInternet;
+   hInet, hURL: HInternet;
    Buffer: array[1..BufferSize] of Byte;
    BufferLen: DWORD;
    f: File;
@@ -87,16 +96,19 @@ Function wget(const fileURL, DestFileName: Utf8String; CBReceiver:TObject=Nil;pr
 
 begin
   result := false;
-  sAppName := ExtractFileName(ParamStr(0)) ;
-  if enableProxy then
-      hSession := InternetOpenW(PWideChar(UTF8Decode(sAppName)), INTERNET_OPEN_TYPE_PRECONFIG, nil, nil, 0)
+  if UserAgent = '' then
+    sAppName := ExtractFileName(ParamStr(0))
   else
-      hSession := InternetOpenW(PWideChar(UTF8Decode(sAppName)), INTERNET_OPEN_TYPE_DIRECT, nil, nil, 0) ;
+    sAppName:= UserAgent;
+  if enableProxy then
+      hInet := InternetOpenW(PWideChar(UTF8Decode(sAppName)), INTERNET_OPEN_TYPE_PRECONFIG, nil, nil, 0)
+  else
+      hInet := InternetOpenW(PWideChar(UTF8Decode(sAppName)), INTERNET_OPEN_TYPE_DIRECT, nil, nil, 0) ;
   try
     if not forceReload then
-      hURL := InternetOpenUrlW(hSession, PWideChar(UTF8Decode(fileURL)), nil, 0,  INTERNET_FLAG_DONT_CACHE+INTERNET_FLAG_KEEP_CONNECTION, 0)
+      hURL := InternetOpenUrlW(hInet, PWideChar(UTF8Decode(fileURL)), nil, 0,  INTERNET_FLAG_DONT_CACHE+INTERNET_FLAG_KEEP_CONNECTION, 0)
     else
-      hURL := InternetOpenUrlW(hSession, PWideChar(UTF8Decode(fileURL)), nil, 0, INTERNET_FLAG_DONT_CACHE+INTERNET_FLAG_RELOAD+INTERNET_FLAG_PRAGMA_NOCACHE+INTERNET_FLAG_KEEP_CONNECTION, 0) ;
+      hURL := InternetOpenUrlW(hInet, PWideChar(UTF8Decode(fileURL)), nil, 0, INTERNET_FLAG_DONT_CACHE+INTERNET_FLAG_RELOAD+INTERNET_FLAG_PRAGMA_NOCACHE+INTERNET_FLAG_KEEP_CONNECTION, 0) ;
     if assigned(hURL) then
     try
       dwIndex  := 0;
@@ -143,7 +155,7 @@ begin
       InternetCloseHandle(hURL)
     end
   finally
-    InternetCloseHandle(hSession)
+    InternetCloseHandle(hInet)
   end
 end;
 
@@ -151,7 +163,7 @@ end;
 function httpGetHeaders(url: ansistring; enableProxy:Boolean= False;
    ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString=''):RawByteString;
 var
-  hInet,hFile,hConnect: HINTERNET;
+  hInet,hUrl,hConnect: HINTERNET;
   buffer: array[1..1024] of byte;
   OutBufferLen:Cardinal;
   OutBuffer:PAnsiChar;
@@ -169,7 +181,7 @@ begin
 
   hInet:=Nil;
   hConnect := Nil;
-  hFile:=Nil;
+  hUrl:=Nil;
   if enableProxy then
      hInet := InternetOpen('wapt',INTERNET_OPEN_TYPE_PRECONFIG,nil,nil,0)
   else
@@ -205,30 +217,30 @@ begin
     doc := uri.Path+uri.document;
     if uri.params<>'' then
       doc:= doc+'?'+uri.Params;
-    hFile := HttpOpenRequest(hConnect, 'HEAD', PAnsiChar(doc), HTTP_VERSION, nil, nil,flags , 0);
-    if not Assigned(hFile) then
+    hUrl := HttpOpenRequest(hConnect, 'HEAD', PAnsiChar(doc), HTTP_VERSION, nil, nil,flags , 0);
+    if not Assigned(hUrl) then
       Raise EHTTPException.Create('Unable to get doc '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')',0);
 
-    if not HttpSendRequest(hFile, nil, 0, nil, 0) then
+    if not HttpSendRequest(hUrl, nil, 0, nil, 0) then
     begin
       ErrorCode:=GetLastError;
       if (ErrorCode = ERROR_INTERNET_INVALID_CA) then
       begin
-        ignoreCerticateErrors(hFile, error);
-        if not HttpSendRequest(hFile, nil, 0, nil, 0) then
+        ignoreCerticateErrors(hUrl, error);
+        if not HttpSendRequest(hUrl, nil, 0, nil, 0) then
           Raise EHTTPException.Create('Unable to send request to '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')',0);
       end;
     end;
 
     OutBuffer:=Nil;
     OutBufferLen:=0;
-    if Assigned(hFile) then
+    if Assigned(hUrl) then
     try
-      HttpQueryInfo(hFile, HTTP_QUERY_RAW_HEADERS_CRLF, OutBuffer,@OutBufferLen, Nil);
+      HttpQueryInfo(hUrl, HTTP_QUERY_RAW_HEADERS_CRLF, OutBuffer,@OutBufferLen, Nil);
       if OutBufferLen>0 then
       begin
         OutBuffer := Getmem(OutBufferLen);
-        if HttpQueryInfo(hFile, HTTP_QUERY_RAW_HEADERS_CRLF, OutBuffer,@OutBufferLen, Nil) then
+        if HttpQueryInfo(hUrl, HTTP_QUERY_RAW_HEADERS_CRLF, OutBuffer,@OutBufferLen, Nil) then
         begin
           Result := PAnsiChar(OutBuffer);
           //SetLength(Result,OutBufferLen);
@@ -238,9 +250,9 @@ begin
     finally
       if Assigned(OutBuffer) then
         Freemem(OutBuffer);
-      InternetCloseHandle(hFile);
-      if Assigned(hFile) then
-        InternetCloseHandle(hFile);
+      InternetCloseHandle(hUrl);
+      if Assigned(hUrl) then
+        InternetCloseHandle(hUrl);
     end
 
   finally
@@ -257,7 +269,7 @@ end;
 function httpGetString(url: ansistring; enableProxy:Boolean= False;
    ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString=''):RawByteString;
 var
-  hInet,hFile,hConnect: HINTERNET;
+  hInet,hUrl,hConnect: HINTERNET;
   buffer: array[1..1024] of byte;
   flags,bytesRead,dwError,port : DWORD;
   pos:integer;
@@ -272,7 +284,7 @@ begin
   result := '';
   hInet:=Nil;
   hConnect := Nil;
-  hFile:=Nil;
+  hUrl:=Nil;
   if enableProxy then
      hInet := InternetOpen('wapt',INTERNET_OPEN_TYPE_PRECONFIG,nil,nil,0)
   else
@@ -308,26 +320,26 @@ begin
     doc := uri.Path+uri.document;
     if uri.params<>'' then
       doc:= doc+'?'+uri.Params;
-    hFile := HttpOpenRequest(hConnect, 'GET', PAnsiChar(doc), HTTP_VERSION, nil, nil,flags , 0);
-    if not Assigned(hFile) then
+    hUrl := HttpOpenRequest(hConnect, 'GET', PAnsiChar(doc), HTTP_VERSION, nil, nil,flags , 0);
+    if not Assigned(hUrl) then
       Raise EHTTPException.Create('Unable to get doc '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')',0);
 
-    if not HttpSendRequest(hFile, nil, 0, nil, 0) then
+    if not HttpSendRequest(hUrl, nil, 0, nil, 0) then
     begin
       ErrorCode:=GetLastError;
       if (ErrorCode = ERROR_INTERNET_INVALID_CA) then
       begin
-        ignoreCerticateErrors(hFile, error);
-        if not HttpSendRequest(hFile, nil, 0, nil, 0) then
+        ignoreCerticateErrors(hUrl, error);
+        if not HttpSendRequest(hUrl, nil, 0, nil, 0) then
           Raise EHTTPException.Create('Unable to send request to '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')',0);
       end;
     end;
 
-    if Assigned(hFile) then
+    if Assigned(hUrl) then
     try
       dwIndex  := 0;
       dwCodeLen := 10;
-      if HttpQueryInfo(hFile, HTTP_QUERY_STATUS_CODE, @dwcode, dwcodeLen, dwIndex) then
+      if HttpQueryInfo(hUrl, HTTP_QUERY_STATUS_CODE, @dwcode, dwcodeLen, dwIndex) then
       begin
         res := pansichar(@dwcode);
         dwNumber := sizeof(Buffer)-1;
@@ -337,7 +349,7 @@ begin
           pos:=1;
           repeat
             FillChar(buffer,SizeOf(buffer),0);
-            InternetReadFile(hFile,@buffer,SizeOf(buffer),bytesRead);
+            InternetReadFile(hUrl,@buffer,SizeOf(buffer),bytesRead);
             SetLength(Result,Length(result)+bytesRead);
             Move(Buffer,Result[pos],bytesRead);
             inc(pos,bytesRead);
@@ -352,8 +364,8 @@ begin
       else
          raise EHTTPException.Create('Unable to download: '+URL+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')',0);
     finally
-      if Assigned(hFile) then
-        InternetCloseHandle(hFile);
+      if Assigned(hUrl) then
+        InternetCloseHandle(hUrl);
     end
     else
        raise EHTTPException.Create('Unable to download: "'+URL+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')',0);

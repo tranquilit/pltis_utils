@@ -439,7 +439,7 @@ end;
 procedure SetComputerNameEx(newname:WideString;ANameFormat: COMPUTER_NAME_FORMAT );
 begin
   if not SetComputerNameExW(ANameFormat, PWideChar(newname)) then
-    Raise Exception.Create('Unable to set new hostname');
+    Raise Exception.Create('Unable to set new hostnameEx');
 end;
 
 procedure SetComputerName(newname:WideString);

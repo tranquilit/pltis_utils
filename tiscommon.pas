@@ -105,6 +105,9 @@ function IsWinXP:Boolean;
 function GetPersonalFolder:Utf8String;
 function GetLocalAppdataFolder:Utf8String;
 function GetAppdataFolder:Utf8String;
+
+Function GetAppUserFolder:Utf8String;
+
 function GetStartMenuFolder: Utf8String;
 function GetCommonStartMenuFolder: Utf8String;
 function GetStartupFolder: Utf8String;
@@ -1319,6 +1322,11 @@ end;
 function GetAppdataFolder:Utf8String;
 begin
   result :=  GetSpecialFolderLocation(CSIDL_APPDATA);
+end;
+
+Function GetAppUserFolder : Utf8String;
+begin
+  Result := IncludeTrailingPathDelimiter(GetSpecialFolderLocation(CSIDL_APPDATA)) + ApplicationName;
 end;
 
 function GetStartMenuFolder: Utf8String;

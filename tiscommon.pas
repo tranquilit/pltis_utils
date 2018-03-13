@@ -23,15 +23,7 @@ unit tiscommon;
 # -----------------------------------------------------------------------
 }
 
-{$mode objfpc}
-{$H+}
-{$codepage UTF8}
-
-{.$mode delphiunicode}
-{.$codepage UTF8}
-
-{.$mode delphi}
-{.$H+}
+{$mode objfpc}{$H+}
 
 interface
 
@@ -2353,7 +2345,7 @@ begin
   found:=False;
 	for i:=1 to ParamCount do
 	begin
-		S:=ParamStr(i);
+		S:=ParamStrUTF8(i);
 		if
 			(UTF8CompareText(Copy(S, 1, Length(ID)+2), '/'+ID+'=') = 0) or
 			(UTF8CompareText(Copy(S, 1, Length(ID)+2), '-'+ID+'=') = 0) then

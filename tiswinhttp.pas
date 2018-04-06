@@ -66,7 +66,7 @@ function GetWinInetError(ErrorCode:Cardinal): ansistring;
 
 implementation
 
-uses URIParser,FileUtil,JwaWinType,JwaWinBase;
+uses URIParser,LazFileUtils,JwaWinType,JwaWinBase;
 
 Function GetHttpAgent:ansistring;
 var
@@ -144,7 +144,7 @@ begin
 
         except
           If FileExists(DestFileName) then
-            FileUtil.DeleteFileUTF8(DestFileName);
+            LazFileUtils.DeleteFileUTF8(DestFileName);
           raise;
         end;
         result := (Size>0);

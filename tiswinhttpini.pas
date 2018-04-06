@@ -48,7 +48,7 @@ Function httpNewStream(url:String):TStream;
 var
   content:String;
 begin
-  if not FileExistsUTF8(URL) { *Converted from FileExists*  } then
+  if not FileExists(URL) then
   begin
     result:=TMemoryStream.Create;
     Content:=httpGetString(url);
@@ -60,4 +60,4 @@ begin
 end;
 {$endif}
 
-end.
+end.

@@ -14,3 +14,4 @@ lib/*
 /tests/lib/i386-win32
 /tests
 /*.bak
+backup/

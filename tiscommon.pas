@@ -33,7 +33,6 @@ uses
   ;
 
 Procedure UnzipFile(ZipFilePath,OutputPath:Utf8String);
-Procedure AddToUserPath(APath:Utf8String);
 procedure AddToSystemPath(APath:Utf8String);
 
 procedure UpdateCurrentApplication(fromURL:Utf8String;Restart:Boolean;restartparam:Utf8String);
@@ -50,6 +49,8 @@ function UserInGroup(Group :DWORD) : Boolean;
 
 {$ifdef windows}
 function IsWin64: Boolean;
+
+Procedure AddToUserPath(APath:Utf8String);
 
 function GetComputerNameExString(ANameFormat: COMPUTER_NAME_FORMAT): WideString;
 procedure SetComputerName(newname:WideString);

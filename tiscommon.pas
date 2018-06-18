@@ -41,10 +41,10 @@ procedure UpdateApplication(fromURL:Utf8String;SetupExename,SetupParams,ExeName,
 function SortableVersion(VersionString:String):String;
 function CompareVersion(v1,v2:String):integer;
 
-function GetComputerName : Utf8String;
-function GetUserName : Utf8String;
-function GetWorkgroupName: Utf8String;
-function GetDomainName: Utf8String;
+function GetComputerName : String;
+function GetUserName : String;
+function GetWorkgroupName: String;
+function GetDomainName: String;
 function UserInGroup(Group :DWORD) : Boolean;
 
 {$ifdef windows}
@@ -86,8 +86,8 @@ function GetBIOSVendor: String;
 function GetBIOSVersion: String;
 function GetBIOSDate:AnsiString;
 
-procedure SetComputerDescription(desc:WideString);
-function ComputerDescription:WideString;
+procedure SetComputerDescription(desc:String);
+function ComputerDescription:String;
 
 function  GetApplicationVersion(FileName:Utf8String=''): Utf8String;
 
@@ -213,7 +213,6 @@ const
 begin
   Result := UserInGroup(DOMAIN_ALIAS_RID_ADMINS);
 end;
-{$endif}
 
 function GetSystemProductName: String;
 const
@@ -293,18 +292,16 @@ begin
   end;
 end;
 
-function ComputerDescription:WideString;
+function ComputerDescription:String;
 var
   reg: TRegistry;
-  s: WideString;
 begin
   reg := TRegistry.Create;
   try
     reg.RootKey:=HKEY_LOCAL_MACHINE;
     if reg.OpenKeyReadOnly('System\CurrentControlSet\Services\lanmanserver\parameters') then
     begin
-      s:=reg.ReadString('srvcomment');
-      Result := s;
+      Result:=WinCPToUTF8(reg.ReadString('srvcomment'));
     end
     else
       Result :='';
@@ -314,7 +311,7 @@ begin
 end;
 
 
-procedure SetComputerDescription(desc:WideString);
+procedure SetComputerDescription(desc:String);
 var
   reg : TRegistry;
 begin
@@ -322,12 +319,12 @@ begin
   try
     reg.RootKey:=HKEY_LOCAL_MACHINE;
     if reg.OpenKey('System\CurrentControlSet\Services\lanmanserver\parameters',False) then
-      reg.WriteString('srvcomment',desc)
+      reg.WriteString('srvcomment',UTF8ToWinCP(desc))
   finally
     reg.Free;
   end;
 end;
-
+{$endif}
 
 
 {$ifdef windows}
@@ -1076,7 +1073,7 @@ begin
 end;
 {$endif}
 
-function GetUserName: Utf8String;
+function GetUserName: String;
 begin
   {$ifdef windows}
   Result := GetUserNameWindows();
@@ -1160,7 +1157,7 @@ begin
 end;
 {$endif}
 
-function GetWorkgroupName: Utf8String;
+function GetWorkgroupName: String;
 begin
   {$ifdef windows}
   Result := GetWorkGroupNameWindows();
@@ -1236,7 +1233,7 @@ begin
 end;
 {$endif}
 
-function GetDomainName(): Utf8String;
+function GetDomainName(): String;
 begin
   {$ifdef windows}
   Result := GetDomainNameWindows();
@@ -1454,14 +1451,14 @@ begin
               (Info.dwMajorVersion = 5) and (Info.dwMinorVersion = 1)
 end;
 
-function GetComputerNameWindows : WideString;
+function GetComputerNameWindows : String;
 var
   buffer: array[0..255] of WideChar;
   size: dword;
 begin
   size := 256;
   if windows.GetComputerNameW(@buffer, size) then
-    Result := buffer
+    Result := UTF8Encode(WideString(buffer))
   else
     Result := ''
 end;
@@ -1504,7 +1501,7 @@ begin
 end;
 {$endif}
 
-function GetComputerName : Utf8String;
+function GetComputerName : String;
 begin
   {$ifdef windows}
   Result := GetComputerNameWindows();

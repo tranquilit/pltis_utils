@@ -287,9 +287,9 @@ function CharLower(const C: Char): Char; {$IFDEF SUPPORTS_INLINE} inline; {$ENDI
 function CharUpper(const C: Char): Char; {$IFDEF SUPPORTS_INLINE} inline; {$ENDIF}
 function CharToggleCase(const C: Char): Char;
 
-function StrSplit(St: String; Sep: String): TDynStringArray;
+function StrSplit(St: String; Sep: String;Trimmed:Boolean=False): TDynStringArray;
 function StrJoin(Sep: String; StrArray : TDynStringArray): String;
-function StrSplit(St: Utf8String; Sep: Utf8String): TDynUtf8StringArray; overload;
+function StrSplit(St: Utf8String; Sep: Utf8String;Trimmed:Boolean=False): TDynUtf8StringArray; overload;
 function StrJoin(Sep: Utf8String; StrArray : TDynUtf8StringArray): Utf8String; overload;
 function StrSplitLines(St: Utf8String): TDynUtf8StringArray;
 
@@ -2160,7 +2160,7 @@ begin
     Result := nil;
 end;
 
-function StrSplit(St: String; Sep: String): TDynStringArray;
+function StrSplit(St: String; Sep: String;Trimmed:Boolean=False): TDynStringArray;
 var
   tok : String;
   len : integer;
@@ -2173,7 +2173,10 @@ begin
     begin
       inc(len);
       SetLength(Result,len);
-      Result[len-1] := tok;
+      if Trimmed then
+        Result[len-1] := trim(tok)
+      else
+        Result[len-1] := tok;
     end;
   until St='';
 end;
@@ -2191,7 +2194,7 @@ begin
   end;
 end;
 
-function StrSplit(St: Utf8String; Sep: Utf8String): TDynUtf8StringArray; overload;
+function StrSplit(St: Utf8String; Sep: Utf8String;Trimmed:Boolean=False): TDynUtf8StringArray; overload;
 var
   tok : Utf8String;
   len : integer;
@@ -2204,7 +2207,10 @@ begin
     begin
       inc(len);
       SetLength(Result,len);
-      Result[len-1] := tok;
+      if Trimmed then
+        Result[len-1] := Trim(tok)
+      else
+        Result[len-1] := tok;
     end;
   until St='';
 end;

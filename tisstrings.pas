@@ -22,7 +22,7 @@ unit tisstrings;
 interface
 
 uses
-  Classes, SysUtils;
+  Classes, SysUtils,LazUTF8;
 
 // Exceptions
 type
@@ -1925,7 +1925,7 @@ begin
   if I <> 0 then
   begin
     Result := Copy(S, 1, I - 1);
-    Delete(S, length(Separator), I);
+    Delete(S, 1,I+Length(Separator)-1);
   end
   else
   begin
@@ -1942,7 +1942,7 @@ begin
   if I <> 0 then
   begin
     Result := Copy(S, 1, I - 1);
-    Delete(S, length(Separator), I);
+    Delete(S, 1,I+Length(Separator)-1);
   end
   else
   begin

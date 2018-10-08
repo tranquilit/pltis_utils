@@ -2346,10 +2346,11 @@ begin
 		S:=ParamStrUTF8(i);
 		if
 			(UTF8CompareText(Copy(S, 1, Length(ID)+2), '/'+ID+'=') = 0) or
-			(UTF8CompareText(Copy(S, 1, Length(ID)+2), '-'+ID+'=') = 0) then
+			(UTF8CompareText(Copy(S, 1, Length(ID)+2), '-'+ID+'=') = 0) or
+			(UTF8CompareText(Copy(S, 1, Length(ID)+3), '--'+ID+'=') = 0) then
 		begin
       found:=True;
-			Result:=Copy(S,Length(ID)+2+1,MaxInt);
+			Result:=Copy(S,pos('=',S)+1,MaxInt);
 			Break;
 		end;
 	end;

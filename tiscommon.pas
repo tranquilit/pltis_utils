@@ -39,7 +39,7 @@ procedure UpdateCurrentApplication(fromURL:Utf8String;Restart:Boolean;restartpar
 procedure UpdateApplication(fromURL:Utf8String;SetupExename,SetupParams,ExeName,RestartParam:Utf8String);
 
 function SortableVersion(VersionString:String):String;
-function CompareVersion(v1,v2:String):integer;
+function CompareVersion(const v1,v2:String):integer;
 
 function GetComputerName : String;
 function GetUserName : String;
@@ -1383,39 +1383,41 @@ begin
   until tok='';
 end;
 
-function CompareVersion(v1,v2:String):integer;
+function CompareVersion(const v1,v2:String):integer;
 var
-  suite1,suite2,retry1,retry2,tok1,tok2:String;
+  version1,version2,pack1,pack2,tok1,tok2:String;
 begin
-  suite1 := v1;
-  suite2 := v2;
+  // '1.2.3-4';
+  pack1 := v1;
+  pack2 := v2;
+
+  version1 := StrToken(pack1,'-');
+  version2 := StrToken(pack2,'-');
+
+  //version base
   repeat
-    retry1 := suite1;
-    retry2 := suite2;
-    tok1 := StrToken(suite1,'.');
-    tok2 := StrToken(suite2,'.');
+    tok1 := StrToken(version1,'.');
+    tok2 := StrToken(version2,'.');
     if (tok1<>'') or (tok2<>'') then
     try
       result := StrToInt(tok1)-StrToInt(tok2);
     except
-      if (tok1='') or (tok2='') then
-         result := CompareStr(tok1,tok2)
-      else
-      begin
-        suite1 := retry1;
-        suite2 := retry2;
-        tok1 := StrToken(suite1,'-');
-        tok2 := StrToken(suite2,'-');
-        try
-          result := StrToInt(tok1)-StrToInt(tok2)
-        except
-          result := CompareStr(retry1,retry2);
-        end;
-      end;
+      result := CompareStr(tok1,tok2)
     end;
     if (result<>0) or (tok1='') or (tok2='') then
       break;
   until (result<>0) or (tok1='') or (tok2='');
+
+  // packaging
+  if (Result=0) and ((pack1<>'') or (pack2<>'')) then
+  begin
+    if (pack1<>'') or (pack2<>'') then
+    try
+      result := StrToInt(pack1)-StrToInt(pack2);
+    except
+      result := CompareStr(pack1,pack2)
+    end;
+  end;
 end;
 
 procedure Logger(Msg: Utf8String;level:LogLevel=WARNING);

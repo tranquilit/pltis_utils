@@ -61,7 +61,9 @@ function AddUser(const Server, User, Password: WideString): NET_API_STATUS;
 function DelUser(const Server, User: WideString): NET_API_STATUS;
 function RemoveFromGroup(const Server, User, Group: WideString): NET_API_STATUS;
 function GetAccountSid(const Server, User: WideString; var Sid: PSID): DWORD;
+function GetAccountSidString(const Server, User: WideString):String;
 function StrSIDToName(const StrSID: AnsiString; var Name: Ansistring; var SIDType: DWORD): Boolean;
+function SIDToStringSID(const aSID:PSID): String;
 function AddToGroup(const member, Group: WideString): NET_API_STATUS;
 function UserModalsGet(const Server: String): USER_MODALS_INFO_0;
 function DomainGet: String;
@@ -124,6 +126,9 @@ const
 
 function GetCurrentUserName(fFormat: DWORD=NameSamCompatible) : Ansistring;
 function GetCurrentUserSid: Ansistring;
+
+procedure SetUserProfilePath(SID:String;ImagePath:String);
+function GetUserProfilePath(SID:String):String;
 
 function UserLogin(user,password,domain:String):THandle;
 function UserDomain(htoken:THandle):AnsiString;
@@ -537,6 +542,23 @@ begin
     Result := GetLastError;
 end;
 
+
+function GetAccountSidString(const Server, User: WideString):String;
+var
+  ASID:PSid;
+begin
+  ASID:=Nil;
+  try
+    if GetAccountSid(Server,User,ASID)=0 then
+      Result := SIDToStringSID(ASID)
+    else
+      Result := '';
+  finally
+     if ASID<>Nil then
+      Freememory(ASID);
+  end;
+end;
+
 (*
  * Procedure  : StrSIDToName
  * Author     : MPu
@@ -568,6 +590,23 @@ begin
     LocalFree(Cardinal(SID));
   result := err;
 end;
+
+function SIDToStringSID(const aSID:PSID): String;
+var
+  Buffer            : PAnsiChar;
+  err               : Boolean;
+begin
+  err := ConvertSidToStringSid(aSID,Buffer);
+  if err then
+  begin
+    Result := Buffer;
+    if Assigned(Buffer) then
+      LocalFree(LongWord(Buffer));
+  end
+  else
+    Result :='';
+end;
+
 
 
 (*
@@ -2155,9 +2194,11 @@ function UserLogin(user,password,domain:String):THandle;
 var
   htok:THandle;
 begin
+ {$H-}
   if not LogonUser(PAnsiChar(user),pAnsichar(domain),pAnsichar(password),LOGON32_LOGON_NETWORK,LOGON32_PROVIDER_DEFAULT,htok) then
-    raise EXCEPTION.Create('Unable to login as '+user+' on domain '+domain{$H-});
+    raise EXCEPTION.Create('Unable to login as '+user+' on domain '+domain);
   result := htok;
+  {$H+}
 end;
 
 function OnSystemAccount(): Boolean;
@@ -2305,8 +2346,6 @@ begin
 
 end;
 
-
-
 function GetCurrentUserSid: Ansistring;
 var
   hAccessToken: THandle;
@@ -2334,6 +2373,37 @@ begin
     CloseHandle(hAccessToken);
   end;
 end;
+
+procedure SetUserProfilePath(SID:AnsiString;ImagePath:AnsiString);
+var
+  r: TRegistry;
+begin
+  r := TRegistry.Create(KEY_ALL_ACCESS);
+  try
+    r.RootKey:=HKEY_LOCAL_MACHINE;
+    r.OpenKey('SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\'+SID,True);
+    r.WriteExpandString('ProfileImagePath',ImagePath);
+  finally
+    r.CloseKey;
+    r.Free;
+  end;
+end;
+
+function GetUserProfilePath(SID:String):String;
+var
+  r: TRegistry;
+begin
+  r := TRegistry.Create(KEY_READ);
+  try
+    r.RootKey:=HKEY_LOCAL_MACHINE;
+    r.OpenKey('SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\'+SID,False);
+    Result := r.ReadString('ProfileImagePath');
+  finally
+    r.CloseKey;
+    r.Free;
+  end;
+end;
+
 
 function GetCmdParams(ID:Utf8String;Default:Utf8String=''):Utf8String;
 var

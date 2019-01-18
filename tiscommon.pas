@@ -66,7 +66,14 @@ function StrSIDToName(const StrSID: AnsiString; var Name: Ansistring; var SIDTyp
 function SIDToStringSID(const aSID:PSID): String;
 function AddToGroup(const member, Group: WideString): NET_API_STATUS;
 function UserModalsGet(const Server: String): USER_MODALS_INFO_0;
+
+// Return domain name
 function DomainGet: String;
+
+// Return current domain sid
+function DomainSID: String;
+
+// Return the NetBIOS name of the domain or workgroup to which the computer is joined
 function GetJoinInformation:String;
 
 function IsAdmin: LongBool;
@@ -599,9 +606,9 @@ begin
   err := ConvertSidToStringSid(aSID,Buffer);
   if err then
   begin
-    Result := Buffer;
+    Result := String(Buffer);
     if Assigned(Buffer) then
-      LocalFree(LongWord(Buffer));
+      LocalFree(HLocal(Buffer));
   end
   else
     Result :='';
@@ -668,6 +675,24 @@ begin
     NetApiBufferFree(UserModalsInfo);
   end;
 end;
+
+
+function DomainSID: String;
+var
+  UserModalsInfo    : PUSER_MODALS_INFO_2;
+  dwRet             : DWORD;
+  SID               : PSID;
+begin
+  UserModalsInfo := nil;
+  dwRet := NetUserModalsGet(nil, 2, Pointer(UserModalsInfo));
+  if ((dwRet = NERR_Success) and Assigned(UserModalsInfo)) then
+  begin
+    Result := SIDToStringSID(UserModalsInfo^.usrmod2_domain_id);
+    //result.usrmod2_domain_id := UserModalsInfo^.usrmod2_domain_id;
+    NetApiBufferFree(UserModalsInfo);
+  end;
+end;
+
 
 function GetJoinInformation:String;
 var

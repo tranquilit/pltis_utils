@@ -237,9 +237,10 @@ function StrRestOf(const S: string; N: SizeInt): string;
 /// Returns the right Count characters of the string
 function StrRight(const S: string; Count: SizeInt): string;
 
-function FileToString(const FileName: string): {$IFDEF COMPILER12_UP}RawByteString{$ELSE}AnsiString{$ENDIF};
-procedure StringToFile(const FileName: string; const Contents: {$IFDEF COMPILER12_UP}RawByteString{$ELSE}AnsiString{$ENDIF};
+function FileToString(const FileName: string): RawByteString;
+procedure StringToFile(const FileName: string; const Contents: RawByteString;
   Append: Boolean = False);
+
 
 function StrToken(var S: string; Separator: String): String;
 function StrToken(var S: Utf8string; Separator: Utf8String): Utf8String; overload;
@@ -1880,7 +1881,7 @@ end;
 
 //=== Miscellaneous ==========================================================
 
-function FileToString(const FileName: string): {$IFDEF COMPILER12_UP}RawByteString{$ELSE}AnsiString{$ENDIF};
+function FileToString(const FileName: string): RawByteString;
 var
   fs: TFileStream;
   Len: SizeInt;
@@ -1896,7 +1897,7 @@ begin
   end;
 end;
 
-procedure StringToFile(const FileName: string; const Contents: {$IFDEF COMPILER12_UP}RawByteString{$ELSE}AnsiString{$ENDIF};
+procedure StringToFile(const FileName: string; const Contents: RawByteString;
   Append: Boolean);
 var
   FS: TFileStream;
@@ -1917,7 +1918,7 @@ begin
   end;
 end;
 
-function StrToken(var S: String; Separator: String): String;
+function StrToken(var S: string; Separator: String): String;
 var
   I: SizeInt;
 begin
@@ -1934,7 +1935,7 @@ begin
   end;
 end;
 
-function StrToken(var S: Utf8String; Separator: Utf8String): Utf8String; overload;
+function StrToken(var S: Utf8string; Separator: Utf8String): Utf8String;
 var
   I: SizeInt;
 begin
@@ -2124,7 +2125,7 @@ begin
   end;
 end;
 
-procedure StrTokenToStrings(S: String; Separator: String; const List: TStrings);
+procedure StrTokenToStrings(S: string; Separator: String; const List: TStrings);
 var
   Token: Utf8String;
 begin

@@ -125,9 +125,8 @@ resourcestring
 
 type
   Float = Extended;
-  TDynStringArray        = array of string;
-  TDynUtf8StringArray        = array of Utf8string;
-  TCharValidator = function(const C: Char): Boolean;
+  TDynStringArray = array of string;
+  TCharValidator  = function(const C: Char): Boolean;
 
 function ArrayContainsChar(const Chars: array of Char; const C: Char): Boolean; overload;
 function ArrayContainsChar(const Chars: array of Char; const C: Char; out Index: SizeInt): Boolean; overload;
@@ -243,7 +242,6 @@ procedure StringToFile(const FileName: string; const Contents: RawByteString;
 
 
 function StrToken(var S: string; Separator: String): String;
-function StrToken(var S: Utf8string; Separator: Utf8String): Utf8String; overload;
 procedure StrTokenToStrings(S: string; Separator: String; const List: TStrings);
 function StrWord(const S: string; var Index: SizeInt; out Word: string): Boolean; overload;
 function StrWord(var S: PChar; out Word: string): Boolean; overload;
@@ -290,9 +288,7 @@ function CharToggleCase(const C: Char): Char;
 
 function StrSplit(St: String; Sep: String;Trimmed:Boolean=False): TDynStringArray;
 function StrJoin(Sep: String; StrArray : TDynStringArray): String;
-function StrSplit(St: Utf8String; Sep: Utf8String;Trimmed:Boolean=False): TDynUtf8StringArray; overload;
-function StrJoin(Sep: Utf8String; StrArray : TDynUtf8StringArray): Utf8String; overload;
-function StrSplitLines(St: Utf8String): TDynUtf8StringArray;
+function StrSplitLines(St: String): TDynStringArray;
 
 
 implementation
@@ -2195,43 +2191,9 @@ begin
   end;
 end;
 
-function StrSplit(St: Utf8String; Sep: Utf8String;Trimmed:Boolean=False): TDynUtf8StringArray; overload;
+function StrSplitLines(St: String): TDynStringArray;
 var
-  tok : Utf8String;
-  len : integer;
-begin
-  len := 0;
-  SetLength(Result,0);
-  repeat
-    tok := StrToken(St,Sep);
-    if tok<>'' then
-    begin
-      inc(len);
-      SetLength(Result,len);
-      if Trimmed then
-        Result[len-1] := Trim(tok)
-      else
-        Result[len-1] := tok;
-    end;
-  until St='';
-end;
-
-function StrJoin(Sep: Utf8String; StrArray: TDynUtf8StringArray): Utf8String; overload;
-var
-  i:integer;
-begin
-  Result := '';
-  for i:=0 to length(StrArray)-1 do
-  begin
-    Result:=Result+StrArray[i];
-    if i<length(StrArray)-1 then
-      Result := Result+Sep;
-  end;
-end;
-
-function StrSplitLines(St: Utf8String): TDynUtf8StringArray;
-var
-  st2:UTF8String;
+  st2:String;
 begin
   St2 := StringsReplace(St,[#13#10,#13,#10],[#13,#13,#13],[rfReplaceAll]);
   Result := StrSplit(st2,#13);

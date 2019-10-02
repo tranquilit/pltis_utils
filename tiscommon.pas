@@ -1433,7 +1433,7 @@ end;
 
 function SortableVersion(VersionString: String): String;
 var
-  version,tok : Utf8String;
+  version,tok : String;
 begin
   version := VersionString;
   tok := StrToken(version,'.');
@@ -2455,7 +2455,6 @@ begin
     Result:=Default;
 end;
 {$endif}
-
 
 end.
 

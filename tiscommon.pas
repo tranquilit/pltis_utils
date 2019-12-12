@@ -32,11 +32,11 @@ uses
   {$ifdef windows}, Windows,JwaWindows {$endif}
   ;
 
-Procedure UnzipFile(ZipFilePath,OutputPath:Utf8String);
-procedure AddToSystemPath(APath:Utf8String);
+Procedure UnzipFile(ZipFilePath,OutputPath:String);
+procedure AddToSystemPath(APath:String);
 
-procedure UpdateCurrentApplication(fromURL:Utf8String;Restart:Boolean;restartparam:Utf8String);
-procedure UpdateApplication(fromURL:Utf8String;SetupExename,SetupParams,ExeName,RestartParam:Utf8String);
+procedure UpdateCurrentApplication(fromURL:String;Restart:Boolean;restartparam:String);
+procedure UpdateApplication(fromURL:String;SetupExename,SetupParams,ExeName,RestartParam:String);
 
 function SortableVersion(VersionString:String):String;
 function CompareVersion(const v1,v2:String):integer;
@@ -50,7 +50,7 @@ function UserInGroup(Group :DWORD) : Boolean;
 {$ifdef windows}
 function IsWin64: Boolean;
 
-Procedure AddToUserPath(APath:Utf8String);
+Procedure AddToUserPath(APath:String);
 
 function GetComputerNameExString(ANameFormat: COMPUTER_NAME_FORMAT): WideString;
 procedure SetComputerName(newname:WideString);
@@ -85,8 +85,8 @@ function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString;timeout:integer=50
 function GetFreeLocalPort( portStart : Word = 5000; portEnd : Word = 10000):Word;
 function GetIPFromHost(const HostName: ansistring): ansistring;
 
-function MakePath(const parts:array of Utf8String):Utf8String;
-function RunTask(cmd: utf8string;var ExitStatus:integer;WorkingDir:utf8String='';ShowWindow:TShowWindowOptions=swoHIDE): utf8string;
+function MakePath(const parts:array of String):String;
+function RunTask(cmd: String;var ExitStatus:integer;WorkingDir:String='';ShowWindow:TShowWindowOptions=swoHIDE): String;
 
 {$ifdef windows}
 function GetSystemProductName: String;
@@ -98,26 +98,26 @@ function GetBIOSDate:AnsiString;
 procedure SetComputerDescription(desc:String);
 function ComputerDescription:String;
 
-function  GetApplicationVersion(FileName:Utf8String=''): Utf8String;
+function  GetApplicationVersion(FileName:String=''): String;
 
 function GetOSVersionInfo: TOSVersionInfoEx;
 function IsWinXP:Boolean;
 
 
-function GetPersonalFolder:Utf8String;
-function GetLocalAppdataFolder:Utf8String;
-function GetAppdataFolder:Utf8String;
+function GetPersonalFolder:String;
+function GetLocalAppdataFolder:String;
+function GetAppdataFolder:String;
 
-Function GetAppUserFolder:Utf8String;
+Function GetAppUserFolder:String;
 
-function GetStartMenuFolder: Utf8String;
-function GetCommonStartMenuFolder: Utf8String;
-function GetStartupFolder: Utf8String;
-function GetCommonStartupFolder: Utf8String;
+function GetStartMenuFolder: String;
+function GetCommonStartMenuFolder: String;
+function GetStartupFolder: String;
+function GetCommonStartupFolder: String;
 
-function GetUniqueTempdir(Prefix: Utf8String): Utf8String;
+function GetUniqueTempdir(Prefix: String): String;
 
-function Appuserinipath:Utf8String;
+function Appuserinipath:String;
 
 const
   NameUnknown       = 0; // Unknown name type.
@@ -145,7 +145,7 @@ function GetGroups(srvName, usrName: WideString):TDynStringArray;
 function GetLocalGroups:TDynStringArray;
 function GetLocalGroupMembers(GroupName:WideString):TDynStringArray;
 
-function GetCmdParams(ID:Utf8String;Default:Utf8String=''):Utf8String;
+function GetCmdParams(ID:String;Default:String=''):String;
 
 {
 Function Wow64DisableWow64FsRedirection(Var Wow64FsEnableRedirection: LongBool): LongBool; StdCall;
@@ -203,7 +203,7 @@ uses registry,LazFileUtils,LazUTF8, zipper,tiswinhttp,tislogging
     {$endif}
     ;
 
-function MakePath(const parts:array of Utf8String):Utf8String;
+function MakePath(const parts:array of String):String;
 var
   i:integer;
 begin
@@ -811,9 +811,9 @@ begin
 end;
 
 
-procedure AddToUserPath(APath:Utf8String);
+procedure AddToUserPath(APath:String);
 var
-  SystemPath : Utf8String;
+  SystemPath : String;
 begin
   with TRegistry.Create do
   try
@@ -832,9 +832,9 @@ begin
   end;
 end;
 
-procedure AddToSystemPathWindows(APath:Utf8String);
+procedure AddToSystemPathWindows(APath:String);
 var
-  SystemPath : Utf8String;
+  SystemPath : String;
   aresult:LongWord;
 begin
   with TRegistry.Create do
@@ -858,7 +858,7 @@ end;
 
 
 //Unzip file to path, and return list of files as a string
-procedure UnzipFile(ZipFilePath, OutputPath: Utf8String);
+procedure UnzipFile(ZipFilePath, OutputPath: String);
 var
   UnZipper: TUnZipper;
 begin
@@ -875,13 +875,13 @@ end;
 
 
 {$ifdef unix}
-procedure AddToSystemPathUnix(APath: Utf8String);
+procedure AddToSystemPathUnix(APath: String);
 begin
   { XXX TODO }
 end;
 {$endif}
 
-procedure AddToSystemPath(APath: Utf8String);
+procedure AddToSystemPath(APath: String);
 begin
   {$ifdef windows}
   AddToSystemPathWindows(APath);
@@ -891,11 +891,11 @@ begin
 end;
 
 
-procedure UpdateCurrentApplication(fromURL: Utf8String; Restart: Boolean;
-  restartparam: Utf8String);
+procedure UpdateCurrentApplication(fromURL: String; Restart: Boolean;
+  restartparam: String);
 var
   bat: TextFile;
-  tempdir,tempfn,updateBatch,fn,zipfn,version,destdir : Utf8String;
+  tempdir,tempfn,updateBatch,fn,zipfn,version,destdir : String;
   files:TStringList;
   UnZipper: TUnZipper;
   i:integer;
@@ -991,10 +991,10 @@ begin
 {$endif}
 end;
 
-function GetUniqueTempdir(Prefix: Utf8String): Utf8String;
+function GetUniqueTempdir(Prefix: String): String;
 var
   I: Integer;
-  Start: Utf8String;
+  Start: String;
 begin
   Start:=GetTempDir;
   if (Prefix='') then
@@ -1009,10 +1009,10 @@ begin
 end;
 
 
-procedure UpdateApplication(fromURL:Utf8String;SetupExename,SetupParams,ExeName,RestartParam:Utf8String);
+procedure UpdateApplication(fromURL:String;SetupExename,SetupParams,ExeName,RestartParam:String);
 var
   bat: TextFile;
-  tempdir,tempfn,updateBatch,zipfn,version : Utf8String;
+  tempdir,tempfn,updateBatch,zipfn,version : String;
   files:TStringList;
   UnZipper: TUnZipper;
   i,hinstance:integer;
@@ -1103,7 +1103,7 @@ begin
 end;
 
 {$ifdef windows}
-function GetUserNameWindows: Utf8String;
+function GetUserNameWindows: String;
 var
 	 pcUser   : PWideChar;
 	 dwUSize : DWORD;
@@ -1231,7 +1231,7 @@ begin
 end;
 
 {$ifdef windows}
-function GetDomainNameWindows: Utf8String;
+function GetDomainNameWindows: String;
 var
   hProcess, hAccessToken: THandle;
   InfoBuffer: PWideChar;
@@ -1308,7 +1308,7 @@ end;
 
 {$ifdef windows}
 
-function GetSpecialFolderLocation(csidl: Integer; ForceFolder: Boolean = False ): Utf8String;
+function GetSpecialFolderLocation(csidl: Integer; ForceFolder: Boolean = False ): String;
 Var
   APath : Array[0..MAX_PATH] of WideChar;
   WS: UnicodeString;
@@ -1330,7 +1330,7 @@ begin
   end;
 end;
 
-function GetSendToFolder: Utf8String;
+function GetSendToFolder: String;
 var
   Registry: TRegistry;
 begin
@@ -1362,48 +1362,48 @@ begin
   Result := sUserName;
 end;
 
-function GetPersonalFolder:Utf8String;
+function GetPersonalFolder:String;
 begin
   result := GetSpecialFolderLocation(CSIDL_PERSONAL)
 end;
 
-function GetLocalAppdataFolder:Utf8String;
+function GetLocalAppdataFolder:String;
 begin
   result :=  GetSpecialFolderLocation(CSIDL_LOCAL_APPDATA);
 end;
 
 
-function GetAppdataFolder:Utf8String;
+function GetAppdataFolder:String;
 begin
   result :=  GetSpecialFolderLocation(CSIDL_APPDATA);
 end;
 
-Function GetAppUserFolder : Utf8String;
+Function GetAppUserFolder : String;
 begin
   Result := IncludeTrailingPathDelimiter(GetSpecialFolderLocation(CSIDL_APPDATA)) + ApplicationName;
 end;
 
-function GetStartMenuFolder: Utf8String;
+function GetStartMenuFolder: String;
 begin
   result := GetSpecialFolderLocation(CSIDL_STARTMENU);
 end;
 
-function GetCommonStartMenuFolder: Utf8String;
+function GetCommonStartMenuFolder: String;
 begin
   result := GetSpecialFolderLocation(CSIDL_COMMON_STARTMENU);
 end;
 
-function GetStartupFolder: Utf8String;
+function GetStartupFolder: String;
 begin
   result := GetSpecialFolderLocation(CSIDL_STARTUP);
 end;
 
-function GetCommonStartupFolder: Utf8String;
+function GetCommonStartupFolder: String;
 begin
   result := GetSpecialFolderLocation(CSIDL_COMMON_STARTUP);
 end;
 
-function GetCurrentUser: Utf8String;
+function GetCurrentUser: String;
 var
   charBuffer: array[0..128] of WideChar;
   intgBufferSize: DWORD;
@@ -1420,9 +1420,9 @@ begin
 end;
 
 // to store use specific settings for this application
-function Appuserinipath:Utf8String;
+function Appuserinipath:String;
 var
-  dir : Utf8String;
+  dir : String;
 begin
   dir := IncludeTrailingPathDelimiter(GetAppdataFolder)+ApplicationName;
   if not DirectoryExistsUTF8(dir) then
@@ -1484,7 +1484,7 @@ begin
   end;
 end;
 
-procedure Logger(Msg: Utf8String;level:LogLevel=WARNING);
+procedure Logger(Msg: String;level:LogLevel=WARNING);
 begin
   if level>=currentLogLevel then
   begin
@@ -1577,7 +1577,7 @@ begin
 end;
 
 {$ifdef windows}
-function GetApplicationVersion(FileName: Utf8String): Utf8String;
+function GetApplicationVersion(FileName: String): String;
 var
 	dwHandle, dwVersionSize : DWORD;
 	strSubBlock             : String;
@@ -2006,7 +2006,7 @@ begin
   {$endif}
 end;
 
-function RunTask(cmd: utf8string;var ExitStatus:integer;WorkingDir:utf8String='';ShowWindow:TShowWindowOptions=swoHIDE): utf8string;
+function RunTask(cmd: String;var ExitStatus:integer;WorkingDir:String='';ShowWindow:TShowWindowOptions=swoHIDE): String;
 var
   AProcess: TProcess;
   AStringList: TStringList;
@@ -2430,10 +2430,10 @@ begin
 end;
 
 
-function GetCmdParams(ID:Utf8String;Default:Utf8String=''):Utf8String;
+function GetCmdParams(ID:String;Default:String=''):String;
 var
 	i:integer;
-	S:Utf8String;
+	S:String;
   found:Boolean;
 begin
 	Result:='';
@@ -2457,4 +2457,3 @@ end;
 {$endif}
 
 end.
-

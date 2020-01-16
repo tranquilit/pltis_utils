@@ -22,28 +22,26 @@ unit tislogging;
 #
 # -----------------------------------------------------------------------
 }
-
-{$mode delphiunicode}
-{$codepage UTF8}
-
 interface
 
 uses
-  Classes, SysUtils;
+  Classes, SysUtils {$ifdef windows},Windows{$endif};
 
 type LogLevel=(DEBUG, INFO, WARNING, ERROR, CRITICAL);
 const StrLogLevel: array[DEBUG..CRITICAL] of String = ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL');
-procedure Logger(Msg:AnsiString;level:LogLevel=WARNING);
+procedure Logger(Msg:String;level:LogLevel=WARNING);
+
+procedure ODS(Msg:String);
 
 var
-  loghook : procedure(logmsg:AnsiString) of object;
+  loghook : procedure(logmsg:String) of object;
 
 const
     currentLogLevel:LogLevel=WARNING;
 
 implementation
 
-procedure Logger(Msg: AnsiString;level:LogLevel=WARNING);
+procedure Logger(Msg: String;level:LogLevel=WARNING);
 begin
   if level>=currentLogLevel then
   begin
@@ -55,6 +53,21 @@ begin
   end;
 end;
 
+
+{$ifdef windows}
+procedure ODS(Msg:String);
+var
+  umsg: UnicodeString;
+begin
+  umsg := UTF8Decode(msg);
+  OutputDebugStringW(PWideChar(umsg));
+end;
+{$else}
+procedure ODS(Msg:String);
+begin
+
+end;
+{$endif}
 
 end.
 

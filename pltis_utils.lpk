@@ -3,6 +3,7 @@
   <Package Version="4">
     <PathDelim Value="\"/>
     <Name Value="pltis_utils"/>
+    <Type Value="RunAndDesignTime"/>
     <Author Value="Tranquil IT Systems"/>
     <CompilerOptions>
       <Version Value="11"/>
@@ -10,12 +11,12 @@
       <SearchPaths>
         <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
-      <Other>
-        <CompilerMessages>
-          <MsgFileName Value=""/>
-        </CompilerMessages>
-        <CompilerPath Value="$(CompPath)"/>
-      </Other>
+      <Linking>
+        <Debugging>
+          <DebugInfoType Value="dsDwarf2Set"/>
+          <UseExternalDbgSyms Value="True"/>
+        </Debugging>
+      </Linking>
     </CompilerOptions>
     <Description Value="Various strings, datetime, etc routines"/>
     <Version Major="1" Minor="1"/>
@@ -53,7 +54,6 @@
         <UnitName Value="tiswinhttpini"/>
       </Item8>
     </Files>
-    <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="1">
       <Item1>
         <PackageName Value="LazUtils"/>

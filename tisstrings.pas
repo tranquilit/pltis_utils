@@ -286,7 +286,7 @@ function CharLower(const C: Char): Char; {$IFDEF SUPPORTS_INLINE} inline; {$ENDI
 function CharUpper(const C: Char): Char; {$IFDEF SUPPORTS_INLINE} inline; {$ENDIF}
 function CharToggleCase(const C: Char): Char;
 
-function StrSplit(St: String; Sep: String;Trimmed:Boolean=False): TDynStringArray;
+function StrSplit(St: String; Sep: String;Trimmed:Boolean=False;MaxSplit:Integer=-1): TDynStringArray;
 function StrJoin(Sep: String; StrArray : TDynStringArray): String;
 function StrSplitLines(St: String): TDynStringArray;
 
@@ -2157,7 +2157,7 @@ begin
     Result := nil;
 end;
 
-function StrSplit(St: String; Sep: String;Trimmed:Boolean=False): TDynStringArray;
+function StrSplit(St: String; Sep: String;Trimmed:Boolean=False;MaxSplit:Integer=-1): TDynStringArray;
 var
   tok : String;
   len : integer;
@@ -2174,6 +2174,16 @@ begin
         Result[len-1] := trim(tok)
       else
         Result[len-1] := tok;
+      if (MaxSplit>0) and (len>=MaxSplit) and (st<>'') then
+      begin
+        inc(len);
+        SetLength(Result,len);
+        if Trimmed then
+          Result[len-1] := trim(st)
+        else
+          Result[len-1] := st;
+        exit;
+      end;
     end;
   until St='';
 end;

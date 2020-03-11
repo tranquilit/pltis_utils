@@ -150,7 +150,7 @@ begin
         result := (Size>0);
       end
       else
-        raise EHTTPException.Create('Unable to download: "'+fileURL+'", HTTP Status:'+res, int(res^));
+        raise EHTTPException.Create('Unable to download: "'+fileURL+'", HTTP Status:'+res, StrToInt(res));
     finally
       InternetCloseHandle(hURL)
     end
@@ -357,9 +357,9 @@ begin
         end
         else
           if res='401' then
-            raise EHTTPException.Create('Not authorized: '+URL+' HTTP Status: '+res,int(res^))
+            raise EHTTPException.Create('Not authorized: '+URL+' HTTP Status: '+res,StrToInt(res))
           else
-            raise EHTTPException.Create('Unable to download: '+URL+' HTTP Status: '+res,int(res^));
+            raise EHTTPException.Create('Unable to download: '+URL+' HTTP Status: '+res,StrToInt(res));
       end
       else
          raise EHTTPException.Create('Unable to download: '+URL+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')',0);
@@ -516,7 +516,7 @@ begin
             until bytesRead = 0;
           end
           else
-             raise EHTTPException.Create('Unable to get return data for: '+URL+' HTTP Status: '+res,int(res^));
+             raise EHTTPException.Create('Unable to get return data for: '+URL+' HTTP Status: '+res,StrToInt(res^));
         end
         else
             Raise EHTTPException.Create('Unable to get http status for: '+url+' code: '+IntToStr(GetLastError)+' ('+UTF8Encode(GetWinInetError(GetlastError))+')',0);

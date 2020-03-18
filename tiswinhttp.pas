@@ -54,11 +54,11 @@ type
 function wget(const fileURL, DestFileName: Utf8String; CBReceiver:TObject=Nil;progressCallback:TProgressCallback=Nil;enableProxy:Boolean=False;forceReload:Boolean=True;const UserAgent: ansistring=''): boolean;
 
 function httpGetHeaders(url: ansistring; enableProxy:Boolean= False;
-   ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString=''):RawByteString;
+   ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString='';VerifyCert:Boolean=False):RawByteString;
 function httpGetString(url: ansistring; enableProxy:Boolean= False;
-    ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString=''):RawByteString;
+    ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString='';VerifyCert:Boolean=False):RawByteString;
 function httpPostData(const UserAgent: ansistring; const url: Ansistring; const Data: RawByteString; enableProxy:Boolean= False;
-   ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString=''):RawByteString;
+   ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString='';VerifyCert:Boolean=False):RawByteString;
 
 function ignoreCerticateErrors(oRequestHandle:HINTERNET; var aErrorMsg: ansistring): Boolean;
 
@@ -161,7 +161,7 @@ end;
 
 
 function httpGetHeaders(url: ansistring; enableProxy:Boolean= False;
-   ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString=''):RawByteString;
+   ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString='';VerifyCert:Boolean=False):RawByteString;
 var
   hInet,hUrl,hConnect: HINTERNET;
   buffer: array[1..1024] of byte;
@@ -226,7 +226,7 @@ begin
       ErrorCode:=GetLastError;
       if (ErrorCode = ERROR_INTERNET_INVALID_CA) then
       begin
-        ignoreCerticateErrors(hUrl, error);
+        if not VerifyCert then ignoreCerticateErrors(hUrl, error);
         if not HttpSendRequest(hUrl, nil, 0, nil, 0) then
           Raise EHTTPException.Create('Unable to send request to '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')',0);
       end;
@@ -267,7 +267,7 @@ end;
 
 // récupère une chaine de caractères en http en utilisant l'API windows
 function httpGetString(url: ansistring; enableProxy:Boolean= False;
-   ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString=''):RawByteString;
+   ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString='';VerifyCert:Boolean=False):RawByteString;
 var
   hInet,hUrl,hConnect: HINTERNET;
   buffer: array[1..1024] of byte;
@@ -329,7 +329,7 @@ begin
       ErrorCode:=GetLastError;
       if (ErrorCode = ERROR_INTERNET_INVALID_CA) then
       begin
-        ignoreCerticateErrors(hUrl, error);
+        if not VerifyCert then ignoreCerticateErrors(hUrl, error);
         if not HttpSendRequest(hUrl, nil, 0, nil, 0) then
           Raise EHTTPException.Create('Unable to send request to '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')',0);
       end;
@@ -423,7 +423,7 @@ begin
 end;
 
 function httpPostData(const UserAgent: Ansistring; const url: Ansistring; const Data: RawByteString; enableProxy:Boolean= False;
-   ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString=''):RawByteString;
+   ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString='';VerifyCert:Boolean=False):RawByteString;
 var
   hInet: HINTERNET;
   hHTTP: HINTERNET;
@@ -492,7 +492,7 @@ begin
           ErrorCode:=GetLastError;
           if (ErrorCode = ERROR_INTERNET_INVALID_CA) then
           begin
-            ignoreCerticateErrors(hReq, ErrorMsg);
+            if not VerifyCert then ignoreCerticateErrors(hReq, ErrorMsg);
             if not HttpSendRequestA(hReq, PAnsiChar(header), length(header), PAnsiChar(pdata), length(pdata))  then
               Raise EHTTPException.Create('Unable to send request to '+url+' code : '+IntToStr(GetLastError)+' ('+GetWinInetError(GetlastError)+')',0);
           end;

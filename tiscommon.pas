@@ -88,6 +88,8 @@ function GetIPFromHost(const HostName: ansistring): ansistring;
 function MakePath(const parts:array of String):String;
 function RunTask(cmd: String;var ExitStatus:integer;WorkingDir:String='';ShowWindow:TShowWindowOptions=swoHIDE): String;
 
+function GetCmdParams(ID:String;Default:String=''):String;
+
 {$ifdef windows}
 function GetSystemProductName: String;
 function GetSystemManufacturer: String;
@@ -144,8 +146,6 @@ function OnSystemAccount: Boolean;
 function GetGroups(srvName, usrName: WideString):TDynStringArray;
 function GetLocalGroups:TDynStringArray;
 function GetLocalGroupMembers(GroupName:WideString):TDynStringArray;
-
-function GetCmdParams(ID:String;Default:String=''):String;
 
 {
 Function Wow64DisableWow64FsRedirection(Var Wow64FsEnableRedirection: LongBool): LongBool; StdCall;
@@ -2429,6 +2429,7 @@ begin
   end;
 end;
 
+{$endif}
 
 function GetCmdParams(ID:String;Default:String=''):String;
 var
@@ -2454,6 +2455,5 @@ begin
   if not Found then
     Result:=Default;
 end;
-{$endif}
 
 end.

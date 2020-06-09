@@ -1056,17 +1056,17 @@ end;
 
 function GetUserNameWindows: Utf8String;
 var
-	 pcUser   : PWideChar;
-	 dwUSize : DWORD;
+     pcUser   : PWideChar;
+     dwUSize : DWORD;
 begin
-	 dwUSize := 21 * SizeOf(WideChar); // user name can be up to 20 characters
-	 GetMem( pcUser, dwUSize); // allocate memory for the string
-	 try
-			if GetUserNameW( pcUser, dwUSize ) then
-				 Result := pcUser;
-	 finally
-			FreeMem( pcUser ); // now free the memory allocated for the string
-	 end;
+     dwUSize := 21 * SizeOf(WideChar); // user name can be up to 20 characters
+     GetMem( pcUser, dwUSize); // allocate memory for the string
+     try
+            if GetUserNameW( pcUser, dwUSize ) then
+                 Result := pcUser;
+     finally
+            FreeMem( pcUser ); // now free the memory allocated for the string
+     end;
 end;
 
 function GetUserName: String;
@@ -1396,22 +1396,22 @@ end;
 
 
  type
-	PFixedFileInfo = ^TFixedFileInfo;
-	TFixedFileInfo = record
-		 dwSignature       : DWORD;
-		 dwStrucVersion    : DWORD;
-		 wFileVersionMS    : WORD;  // Minor Version
-		 wFileVersionLS    : WORD;  // Major Version
-		 wProductVersionMS : WORD;  // Build Number
-		 wProductVersionLS : WORD;  // Release Version
-		 dwFileFlagsMask   : DWORD;
-		 dwFileFlags       : DWORD;
-		 dwFileOS          : DWORD;
-		 dwFileType        : DWORD;
-		 dwFileSubtype     : DWORD;
-		 dwFileDateMS      : DWORD;
-		 dwFileDateLS      : DWORD;
-	end; // TFixedFileInfo
+    PFixedFileInfo = ^TFixedFileInfo;
+    TFixedFileInfo = record
+         dwSignature       : DWORD;
+         dwStrucVersion    : DWORD;
+         wFileVersionMS    : WORD;  // Minor Version
+         wFileVersionLS    : WORD;  // Major Version
+         wProductVersionMS : WORD;  // Build Number
+         wProductVersionLS : WORD;  // Release Version
+         dwFileFlagsMask   : DWORD;
+         dwFileFlags       : DWORD;
+         dwFileOS          : DWORD;
+         dwFileType        : DWORD;
+         dwFileSubtype     : DWORD;
+         dwFileDateMS      : DWORD;
+         dwFileDateLS      : DWORD;
+    end; // TFixedFileInfo
 
 
 function GetComputerName : String;
@@ -1421,41 +1421,41 @@ end;
 
 function GetApplicationVersion(FileName: Utf8String): Utf8String;
 var
-	dwHandle, dwVersionSize : DWORD;
-	strSubBlock             : String;
-	pTemp                   : Pointer;
-	pData                   : Pointer;
+    dwHandle, dwVersionSize : DWORD;
+    strSubBlock             : String;
+    pTemp                   : Pointer;
+    pData                   : Pointer;
 begin
   Result:='';
-	if Filename='' then
+    if Filename='' then
     FileName:=ParamStr(0);
-	 strSubBlock := '\';
+     strSubBlock := '\';
 
-	 // get version information values
-	 dwVersionSize := GetFileVersionInfoSizeW( PWideChar( UTF8Decode(FileName) ), // pointer to filename string
-																						dwHandle );        // pointer to variable to receive zero
+     // get version information values
+     dwVersionSize := GetFileVersionInfoSizeW( PWideChar( UTF8Decode(FileName) ), // pointer to filename string
+                                                                                        dwHandle );        // pointer to variable to receive zero
 
-	 // if GetFileVersionInfoSize is successful
-	 if dwVersionSize <> 0 then
-	 begin
-			GetMem( pTemp, dwVersionSize );
-			try
-				 if GetFileVersionInfo( PAnsiChar( FileName ),             // pointer to filename string
-																dwHandle,                      // ignored
-																dwVersionSize,                 // size of buffer
-																pTemp ) then                   // pointer to buffer to receive file-version info.
+     // if GetFileVersionInfoSize is successful
+     if dwVersionSize <> 0 then
+     begin
+            GetMem( pTemp, dwVersionSize );
+            try
+                 if GetFileVersionInfo( PAnsiChar( FileName ),             // pointer to filename string
+                                                                dwHandle,                      // ignored
+                                                                dwVersionSize,                 // size of buffer
+                                                                pTemp ) then                   // pointer to buffer to receive file-version info.
 
-						if VerQueryValue( pTemp,                           // pBlock     - address of buffer for version resource
-															PAnsiChar( strSubBlock ),            // lpSubBlock - address of value to retrieve
-															pData,                           // lplpBuffer - address of buffer for version pointer
-															dwVersionSize ) then             // puLen      - address of version-value length buffer
-							 with PFixedFileInfo( pData )^ do
-								Result:=IntToSTr(wFileVersionLS)+'.'+IntToSTr(wFileVersionMS)+
-											'.'+IntToStr(wProductVersionLS)+'.'+IntToStr(wProductVersionMS);
-			finally
-				 FreeMem( pTemp );
-			end; // try
-	 end; // if dwVersionSize
+                        if VerQueryValue( pTemp,                           // pBlock     - address of buffer for version resource
+                                                            PAnsiChar( strSubBlock ),            // lpSubBlock - address of value to retrieve
+                                                            pData,                           // lplpBuffer - address of buffer for version pointer
+                                                            dwVersionSize ) then             // puLen      - address of version-value length buffer
+                             with PFixedFileInfo( pData )^ do
+                                Result:=IntToSTr(wFileVersionLS)+'.'+IntToSTr(wFileVersionMS)+
+                                            '.'+IntToStr(wProductVersionLS)+'.'+IntToStr(wProductVersionMS);
+            finally
+                 FreeMem( pTemp );
+            end; // try
+     end; // if dwVersionSize
 end;
 
 function ProcessExists(ExeFileName: string): boolean;
@@ -2118,25 +2118,25 @@ end;
 
 function GetCmdParams(ID:Utf8String;Default:Utf8String=''):Utf8String;
 var
-	i:integer;
-	S:Utf8String;
+    i:integer;
+    S:Utf8String;
   found:Boolean;
 begin
-	Result:='';
+    Result:='';
   found:=False;
-	for i:=1 to ParamCount do
-	begin
-		S:=ParamStrUTF8(i);
-		if
-			(UTF8CompareText(Copy(S, 1, Length(ID)+2), '/'+ID+'=') = 0) or
-			(UTF8CompareText(Copy(S, 1, Length(ID)+2), '-'+ID+'=') = 0) or
-			(UTF8CompareText(Copy(S, 1, Length(ID)+3), '--'+ID+'=') = 0) then
-		begin
+    for i:=1 to ParamCount do
+    begin
+        S:=ParamStrUTF8(i);
+        if
+            (UTF8CompareStr(Copy(S, 1, Length(ID)+2), '/'+ID+'=') = 0) or
+            (UTF8CompareStr(Copy(S, 1, Length(ID)+2), '-'+ID+'=') = 0) or
+            (UTF8CompareStr(Copy(S, 1, Length(ID)+3), '--'+ID+'=') = 0) then
+        begin
       found:=True;
-			Result:=Copy(S,pos('=',S)+1,MaxInt);
-			Break;
-		end;
-	end;
+            Result:=Copy(S,pos('=',S)+1,MaxInt);
+            Break;
+        end;
+    end;
   if not Found then
     Result:=Default;
 end;

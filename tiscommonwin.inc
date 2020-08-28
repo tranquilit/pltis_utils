@@ -160,6 +160,9 @@ const
   CSIDL_LOCAL_APPDATA = $001c;
   strnShellFolders = 'Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders';
 
+const
+  Language:String = '';
+  LanguageFull:String = '';
 
 type
   TServiceState =
@@ -188,7 +191,7 @@ function StopServiceByName(const AServer, AServiceName: AnsiString):Boolean;
 implementation
 
 uses registry,LazFileUtils,LazUTF8, zipper,tiswinhttp,tislogging
-  ,shlobj,winsock2;
+  ,shlobj,winsock2,gettext;
 
 function MakePath(const parts:array of Utf8String):Utf8String;
 var
@@ -804,7 +807,7 @@ end;
 procedure AddToSystemPathWindows(APath:Utf8String);
 var
   SystemPath : Utf8String;
-  aresult:LongWord;
+  aresult: DWORD_PTR;
 begin
   with TRegistry.Create do
   try
@@ -2140,6 +2143,9 @@ begin
   if not Found then
     Result:=Default;
 end;
+
+initialization
+  GetLanguageIDs(LanguageFull,Language);
 
 end.
 {$endif}

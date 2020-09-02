@@ -21,12 +21,614 @@ unit tiscommon;
 # -----------------------------------------------------------------------
 }
 
-{$mode objfpc}{$H+}
+interface
 
-{$if defined(windows)}
-{$include tiscommonwin.inc}
-{$elseif defined(unix)}
-{$include tiscommonunix.inc}
-{$else}
-raise ENotImplemented.Create('tiscommon: OS not supported');
-{$endif}
+{$MODE DELPHI}
+
+uses
+    Classes, SysUtils, tisstrings, Process, IdContext
+{$IFDEF WINDOWS}
+    , Windows, JwaWindows
+{$ENDIF}
+;
+
+{$IF defined(WINDOWS)}
+procedure UpdateApplication(fromURL:Utf8String;SetupExename,SetupParams,ExeName,RestartParam:Utf8String);
+function UserInGroup(Group :DWORD) : Boolean;
+
+function IsWin64: Boolean;
+
+procedure AddToUserPath(APath:Utf8String);
+
+function EnablePrivilege(const Privilege: string; fEnable: Boolean; out PreviousState: Boolean): DWORD;
+
+
+function GetAccountSid(const Server, User: WideString; var Sid: PSID): DWORD;
+function GetAccountSidString(const Server, User: WideString):String;
+function StrSIDToName(const StrSID: AnsiString; var Name: Ansistring; var SIDType: DWORD): Boolean;
+function SIDToStringSID(const aSID:PSID): String;
+function AddToGroup(const member, Group: WideString): NET_API_STATUS;
+function UserModalsGet(const Server: String): USER_MODALS_INFO_0;
+
+// Return domain name
+function DomainGet: String;
+
+// Return current domain sid
+function DomainSID: String;
+
+// Return the NetBIOS name of the domain or workgroup to which the computer is joined
+function GetJoinInformation:String;
+
+function IsAdmin: LongBool;
+function GetAdminSid: PSID;
+
+function GetApplicationVersion(FileName:Utf8String=''): Utf8String;
+
+function GetOSVersionInfo: TOSVersionInfoEx;
+function IsWinXP:Boolean;
+
+function GetPersonalFolder:Utf8String;
+function GetLocalAppdataFolder:Utf8String;
+function GetAppdataFolder:Utf8String;
+
+function GetStartMenuFolder: Utf8String;
+function GetCommonStartMenuFolder: Utf8String;
+function GetStartupFolder: Utf8String;
+function GetCommonStartupFolder: Utf8String;
+
+const
+  NameUnknown       = 0; // Unknown name type.
+  NameFullyQualifiedDN = 1; // Fully qualified distinguished name
+  NameSamCompatible = 2; // Windows NT® 4.0 account name
+  NameDisplay       = 3; // A "friendly" display name
+  NameUniqueId      = 6; // GUID string that the IIDFromString function returns
+  NameCanonical     = 7; // Complete canonical name
+  NameUserPrincipal = 8; // User principal name
+  NameCanonicalEx   = 9;
+  NameServicePrincipal = 10; // Generalized service principal name
+  DNSDomainName     = 11; // DNS domain name, plus the user name
+
+function GetCurrentUserName(fFormat: DWORD=NameSamCompatible) : Ansistring;
+function GetCurrentUserSid: Ansistring;
+
+procedure SetUserProfilePath(SID:String;ImagePath:String);
+function GetUserProfilePath(SID:String):String;
+
+function UserLogin(user,password,domain:String):THandle;
+function UserDomain(htoken:THandle):AnsiString;
+function OnSystemAccount: Boolean;
+
+function GetGroups(srvName, usrName: WideString):TDynStringArray;
+function GetLocalGroups:TDynStringArray;
+function GetLocalGroupMembers(GroupName:WideString):TDynStringArray;
+
+const
+  CSIDL_LOCAL_APPDATA = $001c;
+  strnShellFolders = 'Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders';
+
+type
+  TServiceState =
+   (ssUnknown,         // Just fill the value 0
+    ssStopped,         // SERVICE_STOPPED
+    ssStartPending,    // SERVICE_START_PENDING
+    ssStopPending,     // SERVICE_STOP_PENDING
+    ssRunning,         // SERVICE_RUNNING
+    ssContinuePending, // SERVICE_CONTINUE_PENDING
+    ssPausePending,    // SERVICE_PAUSE_PENDING
+    ssPaused);         // SERVICE_PAUSED
+
+  TServiceStates = set of TServiceState;
+
+const
+  ssPendingStates = [ssStartPending, ssStopPending, ssContinuePending, ssPausePending];
+
+function IsAdminLoggedOn: Boolean;
+function ProcessExists(ExeFileName: string): boolean;
+function KillTask(ExeFileName: string): integer;
+
+function GetServiceStatusByName(const AServer,AServiceName:ansistring):TServiceState;
+function StartServiceByName(const AServer,AServiceName: AnsiString):Boolean;
+function StopServiceByName(const AServer, AServiceName: AnsiString):Boolean;
+
+{$ELSEIF defined(UNIX)}
+function UserInGroup(Group :DWORD) : Boolean;
+
+function GetIPFromHost(const HostName: ansistring): ansistring;
+
+function GetApplicationVersion(FileName:Utf8String=''): Utf8String;
+{$ENDIF}
+
+procedure UnzipFile(ZipFilePath,OutputPath:Utf8String);
+
+function GetSystemProductName: String;
+function GetSystemManufacturer: String;
+function GetBIOSVendor: String;
+function GetBIOSVersion: String;
+function GetBIOSDate: String;
+
+function GetComputerName : String;
+function GetUserName : String;
+function GetWorkgroupName: String;
+function GetDomainName: String;
+
+function AppUserIniPath:Utf8String;
+function GetAppUserFolder:Utf8String;
+function MakePath(const parts:array of Utf8String):Utf8String;
+function GetUniqueTempdir(Prefix: Utf8String): Utf8String;
+
+function SortableVersion(VersionString:String):String;
+function CompareVersion(const v1,v2:String):integer;
+
+function CheckOpenPort(IPAddress : String; Aport : Word):Boolean;
+function GetFreeLocalPort( portStart : Word = 5000; portEnd : Word = 10000):Word;
+function GetIPFromHost(const HostName: ansistring): ansistring;
+
+function RunTask(cmd: utf8string;var ExitStatus:integer;WorkingDir:utf8String='';ShowWindow:TShowWindowOptions=swoHIDE): utf8string;
+
+function GetCmdParams(ID:Utf8String;Default:Utf8String=''):Utf8String;
+
+procedure ResetMemory(out P; Size: Longint);
+
+type
+    TTCPServer = class(TObject)
+    public
+      procedure TCPServerExecute(AContext: TIdContext = Nil);
+    end;
+
+var
+  TCPServer :TTCPServer;
+
+const
+  Language:String = '';
+  LanguageFull:String = '';
+
+implementation
+
+uses
+  registry, LazFileUtils, LazUTF8, zipper, tiswinhttp, tislogging, gettext, uSMBIOS, IdTCPServer, IdSocketHandle, IdException
+{$IF defined(UNIX)}
+  , baseunix, errors, sockets, unix,
+  {$IFNDEF DARWIN}
+  cnetdb
+  {$ELSE}
+  netdb
+  {$ENDIF}
+{$ELSEIF defined(WINDOWS)}
+  , shlobj, winsock2
+{$ENDIF}
+  ;
+
+procedure Logger(Msg: Utf8String;level:LogLevel=WARNING);
+begin
+  if level>=currentLogLevel then
+  begin
+    if IsConsole then
+      WriteLn(Msg)
+    else
+      if Assigned(loghook) then
+        loghook(Msg);
+  end;
+end;
+
+procedure TTCPServer.TCPServerExecute(AContext: TIdContext = Nil);
+begin
+end;
+
+function CheckOpenPort(IPAddress : String; Aport : Word):Boolean;
+var
+  LTCPServer: TIdTCPServer;
+  LBinding: TIdSocketHandle;
+begin
+  Result := True;
+  LTCPServer := TIdTCPServer.Create;
+  try
+    try
+      with LTCPServer do
+      begin
+        DefaultPort   := APort;
+        LBinding      := Bindings.Add;
+        LBinding.IP   := IPAddress;
+        LBinding.Port := APort;
+        OnExecute     := TCPServer.TCPServerExecute;
+        Active        := True;
+      end;
+    finally
+      LTCPServer.Free;
+    end;
+  except on EIdCouldNotBindSocket do
+    Result := False;
+  end;
+end;
+
+{$IF defined(WINDOWS)}
+{$i tiscommonwin.inc}
+{$ELSEIF defined(UNIX)}
+{$i tiscommonunix.inc}
+{$ENDIF}
+
+function MakePath(const parts:array of Utf8String):Utf8String;
+var
+  i:integer;
+begin
+  result := '';
+  for i:=low(parts) to high(parts) do
+  begin
+    result := Result+parts[i];
+    if (i<High(parts)) and (parts[i][length(parts[i])] <> PathDelim) then
+      result := result+PathDelim;
+  end;
+end;
+
+procedure UnzipFile(ZipFilePath, OutputPath: Utf8String);
+var
+  UnZipper: TUnZipper;
+begin
+  UnZipper := TUnZipper.Create;
+  try
+    UnZipper.FileName := ZipFilePath;
+    UnZipper.OutputPath := OutputPath;
+    UnZipper.Examine;
+    UnZipper.UnZipAllFiles;
+  finally
+    UnZipper.Free;
+  end;
+end;
+
+function GetUniqueTempdir(Prefix: Utf8String): Utf8String;
+var
+  I: Integer;
+  Start: Utf8String;
+begin
+  Start:=GetTempDir;
+  if (Prefix='') then
+      Start:=Start+'TMP'
+  else
+    Start:=Start+Prefix;
+  I:=0;
+  repeat
+    Result:=Format('%s%.5d.tmp',[Start,I]);
+    Inc(I);
+  until not DirectoryExistsUTF8(Result);
+end;
+
+function GetBIOSDate: String;
+var
+  SMBios : TSMBios;
+begin
+  SMBios:=TSMBios.Create;
+  try
+     Result:=SMBios.BiosInfo.ReleaseDateStr;
+  finally
+    SMBios.Free;
+  end;
+end;
+
+function GetSystemProductName: String;
+var
+  SMBios : TSMBios;
+  LBaseBoard : TBaseBoardInformation;
+begin
+  SMBios:=TSMBios.Create;
+  try
+     if SMBios.HasBaseBoardInfo then
+        for LBaseBoard in SMBios.BaseBoardInfo do
+          Result:=LBaseBoard.ProductStr
+      else
+          Result:='No Base Board Info was found';
+  finally
+    SMBios.Free;
+  end;
+end;
+
+function GetSystemManufacturer: String;
+var
+  SMBios : TSMBios;
+  LBaseBoard : TBaseBoardInformation;
+begin
+  SMBios:=TSMBios.Create;
+  try
+     if SMBios.HasBaseBoardInfo
+      then
+        for LBaseBoard in SMBios.BaseBoardInfo do
+        begin
+          Result:=LBaseBoard.ManufacturerStr;
+        end
+      else
+          Result:= 'No Base Board Info was found'
+  finally
+    SMBios.Free;
+  end;
+end;
+
+function GetBIOSVendor: String;
+var
+  SMBios : TSMBios;
+begin
+  SMBios:=TSMBios.Create;
+  try
+     Result:=SMBios.BiosInfo.VendorStr;
+  finally
+    SMBios.Free;
+  end;
+end;
+
+function GetBIOSVersion: String;
+var
+  SMBios : TSMBios;
+begin
+  SMBios:=TSMBios.Create;
+  try
+     Result:=SMBios.BiosInfo.VersionStr;
+  finally
+    SMBios.Free;
+  end;
+end;
+
+function SortableVersion(VersionString: String): String;
+var
+  version,tok : String;
+begin
+  version := VersionString;
+  tok := StrToken(version,'.');
+  Result :='';
+  repeat
+    if tok[1] in ['0'..'9'] then
+      Result := Result+FormatFloat('0000',StrToInt(tok))
+    else
+      Result := Result+tok;
+    tok := StrToken(version,'.');
+  until tok='';
+end;
+
+function CompareVersion(const v1,v2:String):integer;
+var
+  version1,version2,pack1,pack2,tok1,tok2:String;
+begin
+  // '1.2.3-4';
+  pack1 := v1;
+  pack2 := v2;
+
+  version1 := StrToken(pack1,'-');
+  version2 := StrToken(pack2,'-');
+
+  //version base
+  repeat
+    tok1 := StrToken(version1,'.');
+    tok2 := StrToken(version2,'.');
+    if (tok1<>'') or (tok2<>'') then
+    try
+      result := StrToInt(tok1)-StrToInt(tok2);
+    except
+      result := CompareStr(tok1,tok2)
+    end;
+    if (result<>0) or (tok1='') or (tok2='') then
+      break;
+  until (result<>0) or (tok1='') or (tok2='');
+
+  // packaging
+  if (Result=0) and ((pack1<>'') or (pack2<>'')) then
+  begin
+    if (pack1<>'') or (pack2<>'') then
+    try
+      result := StrToInt(pack1)-StrToInt(pack2);
+    except
+      result := CompareStr(pack1,pack2)
+    end;
+  end;
+end;
+
+function GetComputerName : String;
+var
+  {$IF defined(UNIX)}
+  Host: AnsiString;
+  {$ELSEIF defined(WINDOWS)}
+  buffer: array[0..255] of WideChar;
+  size: dword;
+  {$ENDIF}
+begin
+  Result := '';
+  {$IF defined(UNIX)}
+  Host := gethostname();
+  if (Host <> '') then
+  begin
+    if Pos('.', Host) > 1 then
+      Result := Copy(Host, 1, Pos('.', Host) - 1)
+    else
+      Result := Host;
+  end;
+  {$ELSEIF defined(WINDOWS)}
+  size := 256;
+  if windows.GetComputerNameW(@buffer, size) then
+    Result := UTF8Encode(WideString(buffer))
+  {$ENDIF}
+end;
+
+function GetUserName: String;
+{$IF defined(WINDOWS)}
+var
+  pcUser   : PWideChar;
+  dwUSize : DWORD;
+{$ENDIF}
+begin
+  Result := '';
+  {$IF defined(UNIX)}
+  Result := GetEnvironmentVariable('LOGNAME');
+  if Result = '' then
+    Result := GetEnvironmentVariable('USER');
+  {$ELSEIF defined(WINDOWS)}
+  dwUSize := 21 * SizeOf(WideChar); // user name can be up to 20 characters
+  GetMem( pcUser, dwUSize); // allocate memory for the string
+  try
+         if GetUserNameW( pcUser, dwUSize ) then
+              Result := pcUser;
+  finally
+         FreeMem( pcUser ); // now free the memory allocated for the string
+  end;
+  {$ENDIF}
+end;
+
+function GetWorkGroupName(): String;
+var
+  {$IF defined(UNIX)}
+  FileLines: TStringList;
+  Line: String;
+  {$ELSEIF defined(WINDOWS)}
+  WkstaInfo: PByte;
+  WkstaInfo100: PWKSTA_INFO_100;
+  {$ENDIF}
+begin
+  Result:='';
+  {$IF defined(UNIX)}
+  try
+    FileLines:=TStringList.Create();
+    FileLines.LoadFromFile('/etc/samba/smb.conf');
+    for Line in FileLines do
+        if Pos('workgroup',Line)<>0 then
+        begin
+          Result:=TrimLeft(Copy(Line, Pos('=', Line) + 1, Length(Line)));
+          Break;
+        end;
+  finally
+    FileLines.Free;
+  end;
+  {$ELSEIF defined(WINDOWS)}
+  if NetWkstaGetInfo(nil, 100, WkstaInfo) = 0 then
+  begin
+    WkstaInfo100 := PWKSTA_INFO_100(WkstaInfo);
+    Result := WkstaInfo100^.wki100_langroup;
+    NetApiBufferFree(Pointer(WkstaInfo))
+  end;
+  {$ENDIF}
+end;
+
+function GetDomainName(): String;
+var
+  {$IF defined(UNIX)}
+  Host: String;
+  {$ELSEIF defined(WINDOWS)}
+  hProcess, hAccessToken: THandle;
+  InfoBuffer: PWideChar;
+  AccountName: array [0..UNLEN] of WideChar;
+  DomainName: array [0..UNLEN] of WideChar;
+
+  InfoBufferSize: Cardinal;
+  AccountSize: Cardinal;
+  DomainSize: Cardinal;
+  snu: SID_NAME_USE;
+  {$ENDIF}
+begin
+  Result := '';
+  {$IF defined(UNIX)}
+  Result := unix.GetDomainName();
+  if Result = '(none)' then
+  begin
+    Result := '';
+    Host := gethostname();
+    if (Host <> '') and (Pos('.', Host) > 0) then
+      Result := Copy(Host, Pos('.', Host) + 1, 255);
+  end;
+  {$ELSEIF defined(WINDOWS)}
+  InfoBufferSize := 1000;
+  AccountSize := SizeOf(AccountName);
+  DomainSize := SizeOf(DomainName);
+  hProcess := GetCurrentProcess;
+  if OpenProcessToken(hProcess, TOKEN_READ, hAccessToken) then
+  try
+    GetMem(InfoBuffer, InfoBufferSize);
+    try
+      if GetTokenInformation(hAccessToken, TokenUser, InfoBuffer, InfoBufferSize, InfoBufferSize) then
+        LookupAccountSidW(nil, PSIDAndAttributes(InfoBuffer)^.sid, AccountName, AccountSize,
+                         DomainName, DomainSize, snu)
+      else
+        RaiseLastOSError;
+    finally
+      FreeMem(InfoBuffer)
+    end;
+    Result := DomainName;
+  finally
+    CloseHandle(hAccessToken);
+  end
+  {$ENDIF}
+end;
+
+procedure ResetMemory(out P; Size: Longint);
+begin
+  if Size > 0 then
+  begin
+    Byte(P) := 0;
+    FillChar(P, Size, 0);
+  end;
+end;
+
+function GetCmdParams(ID:Utf8String;Default:Utf8String=''):Utf8String;
+var
+    i:integer;
+    S:Utf8String;
+  found:Boolean;
+begin
+    Result:='';
+  found:=False;
+    for i:=1 to ParamCount do
+    begin
+        S:=ParamStrUTF8(i);
+        if
+            (UTF8CompareStr(Copy(S, 1, Length(ID)+2), '/'+ID+'=') = 0) or
+            (UTF8CompareStr(Copy(S, 1, Length(ID)+2), '-'+ID+'=') = 0) or
+            (UTF8CompareStr(Copy(S, 1, Length(ID)+3), '--'+ID+'=') = 0) then
+        begin
+      found:=True;
+            Result:=Copy(S,pos('=',S)+1,MaxInt);
+            Break;
+        end;
+    end;
+  if not Found then
+    Result:=Default;
+end;
+
+function RunTask(cmd: utf8string;var ExitStatus:integer;WorkingDir:utf8String='';ShowWindow:TShowWindowOptions=swoHIDE): utf8string;
+var
+  AProcess: TProcess;
+  AStringList: TStringList;
+  Wow64FsEnableRedirection: LongBool;
+begin
+  try
+    AProcess := TProcess.Create(nil);
+    AStringList := TStringList.Create;
+    try
+      AProcess.CommandLine := cmd;
+      if WorkingDir<>'' then
+        AProcess.CurrentDirectory := ExtractFilePath(cmd);
+      AProcess.Options := AProcess.Options + [poStderrToOutPut, poWaitOnExit, poUsePipes];
+      AProcess.ShowWindow:=ShowWindow;
+      AProcess.Execute;
+      while AProcess.Running do;
+      AStringList.LoadFromStream(AProcess.Output);
+      Result := AStringList.Text;
+      ExitStatus:= AProcess.ExitStatus;
+    finally
+      AStringList.Free;
+      AProcess.Free;
+    end;
+  finally
+  end;
+end;
+
+function GetFreeLocalPort( portStart : Word = 5000; portEnd : Word = 10000):Word;
+var
+  trycount  : integer;
+begin
+  trycount:=0;
+  while( trycount < (portEnd - portStart) ) do
+  begin
+      Result:=portStart+Random(portEnd-portStart);
+      if CheckOpenPort('127.0.0.1', Result) then
+         Exit;
+  end;
+  Result:=0;
+end;
+
+
+initialization
+  GetLanguageIDs(LanguageFull,Language);
+
+end.

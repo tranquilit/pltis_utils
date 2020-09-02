@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
-  <Package Version="5">
+  <Package Version="4">
     <PathDelim Value="\"/>
     <Name Value="pltis_utils"/>
     <Type Value="RunAndDesignTime"/>
@@ -14,7 +14,7 @@
     </CompilerOptions>
     <Description Value="Various strings, datetime, etc routines"/>
     <Version Major="1" Minor="1"/>
-    <Files Count="10">
+    <Files Count="11">
       <Item1>
         <Filename Value="tisutils.pas"/>
         <UnitName Value="tisutils"/>
@@ -36,30 +36,37 @@
         <UnitName Value="tiscommon"/>
       </Item5>
       <Item6>
-        <Filename Value="tiscommonwin.inc"/>
-        <Type Value="Include"/>
-      </Item6>
-      <Item7>
-        <Filename Value="tiscommonunix.inc"/>
-        <Type Value="Include"/>
-      </Item7>
-      <Item8>
         <Filename Value="tislogging.pas"/>
         <UnitName Value="tislogging"/>
-      </Item8>
-      <Item9>
+      </Item6>
+      <Item7>
         <Filename Value="tiswinhttp.pas"/>
         <UnitName Value="tiswinhttp"/>
-      </Item9>
-      <Item10>
+      </Item7>
+      <Item8>
         <Filename Value="tiswinhttpini.pas"/>
         <UnitName Value="tiswinhttpini"/>
+      </Item8>
+      <Item9>
+        <Filename Value="tiscommonunix.inc"/>
+        <Type Value="Include"/>
+      </Item9>
+      <Item10>
+        <Filename Value="tiscommonwin.inc"/>
+        <Type Value="Include"/>
       </Item10>
+      <Item11>
+        <Filename Value="uSMBIOS.pas"/>
+        <UnitName Value="uSMBIOS"/>
+      </Item11>
     </Files>
-    <RequiredPkgs Count="1">
+    <RequiredPkgs Count="2">
       <Item1>
-        <PackageName Value="LazUtils"/>
+        <PackageName Value="indylaz"/>
       </Item1>
+      <Item2>
+        <PackageName Value="LazUtils"/>
+      </Item2>
     </RequiredPkgs>
     <UsageOptions>
       <UnitPath Value="$(PkgOutDir)"/>

@@ -8,7 +8,7 @@ interface
 
 uses
   tisutils, tisdatetime, tisstrings, tisinifiles, tiscommon, tislogging, 
-  tiswinhttp, tiswinhttpini, LazarusPackageIntf;
+  tiswinhttp, tiswinhttpini, uSMBIOS, LazarusPackageIntf;
 
 implementation
 

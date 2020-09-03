@@ -105,7 +105,7 @@ begin
   end;
 end;
 
-function GetIPFromHost(const Hostname: AnsiString): AnsiString;
+function GetIPFromHost(const Hostname: String): String;
 type
   TaPInAddr = array[0..10] of pin_addr;
   PaPInAddr = ^TaPInAddr;
@@ -118,7 +118,7 @@ var
   {$ENDIF}
 begin
   Result := '';
-  phe := GetHostByName(PAnsiChar(Hostname){$IFDEF DARWIN}, phe {$ENDIF});
+  phe := GetHostByName(PChar(Hostname){$IFDEF DARWIN}, phe {$ENDIF});
   if {$IF defined(LINUX)} phe = nil {$ELSEIF defined(DARWIN)} not(Res) {$ENDIF} then
     Exit;
   {$IF defined(LINUX)}

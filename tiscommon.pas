@@ -23,8 +23,6 @@ unit tiscommon;
 
 interface
 
-{$MODE DELPHI}
-
 uses
     Classes, SysUtils, tisstrings, Process
 {$IFDEF WINDOWS}
@@ -133,8 +131,6 @@ function StopServiceByName(const AServer, AServiceName: AnsiString):Boolean;
 {$ELSEIF defined(UNIX)}
 function UserInGroup(Group :DWORD) : Boolean;
 
-function GetIPFromHost(const HostName: ansistring): ansistring;
-
 function GetApplicationVersion(FileName:Utf8String=''): Utf8String;
 {$ENDIF}
 
@@ -161,7 +157,7 @@ function CompareVersion(const v1,v2:String):integer;
 
 function CheckOpenPort(IPAddress : String; Aport : Word; delay : integer = 1000):Boolean;
 function GetFreeLocalPort( portStart : Word = 5000; portEnd : Word = 10000; delay : integer = 1000):Word;
-function GetIPFromHost(const HostName: ansistring): ansistring;
+function GetIPFromHost(const Hostname: String): String;
 
 function RunTask(cmd: utf8string;var ExitStatus:integer;WorkingDir:utf8String='';ShowWindow:TShowWindowOptions=swoHIDE): utf8string;
 

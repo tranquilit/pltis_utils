@@ -777,7 +777,7 @@ begin
     end;
 end;
 
-function GetIPFromHostWindows(const HostName: ansistring): ansistring;
+function GetIPFromHostWindows(const HostName: String): String;
 type
   TaPInAddr = array[0..10] of PInAddr;
   PaPInAddr = ^TaPInAddr;

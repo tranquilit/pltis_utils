@@ -26,7 +26,7 @@ interface
 {$MODE DELPHI}
 
 uses
-    Classes, SysUtils, tisstrings, Process, IdContext
+    Classes, SysUtils, tisstrings, Process
 {$IFDEF WINDOWS}
     , Windows, JwaWindows
 {$ENDIF}
@@ -159,8 +159,8 @@ function GetUniqueTempdir(Prefix: Utf8String): Utf8String;
 function SortableVersion(VersionString:String):String;
 function CompareVersion(const v1,v2:String):integer;
 
-function CheckOpenPort(IPAddress : String; Aport : Word):Boolean;
-function GetFreeLocalPort( portStart : Word = 5000; portEnd : Word = 10000):Word;
+function CheckOpenPort(IPAddress : String; Aport : Word; delay : integer = 1000):Boolean;
+function GetFreeLocalPort( portStart : Word = 5000; portEnd : Word = 10000; delay : integer = 1000):Word;
 function GetIPFromHost(const HostName: ansistring): ansistring;
 
 function RunTask(cmd: utf8string;var ExitStatus:integer;WorkingDir:utf8String='';ShowWindow:TShowWindowOptions=swoHIDE): utf8string;
@@ -169,15 +169,6 @@ function GetCmdParams(ID:Utf8String;Default:Utf8String=''):Utf8String;
 
 procedure ResetMemory(out P; Size: Longint);
 
-type
-    TTCPServer = class(TObject)
-    public
-      procedure TCPServerExecute(AContext: TIdContext = Nil);
-    end;
-
-var
-  TCPServer :TTCPServer;
-
 const
   Language:String = '';
   LanguageFull:String = '';
@@ -185,7 +176,7 @@ const
 implementation
 
 uses
-  registry, LazFileUtils, LazUTF8, zipper, tiswinhttp, tislogging, gettext, uSMBIOS, IdTCPServer, IdSocketHandle, IdException
+  registry, LazFileUtils, LazUTF8, zipper, tiswinhttp, tislogging, gettext, uSMBIOS, blcksock
 {$IF defined(UNIX)}
   , baseunix, errors, sockets, unix,
   {$IFNDEF DARWIN}
@@ -210,33 +201,21 @@ begin
   end;
 end;
 
-procedure TTCPServer.TCPServerExecute(AContext: TIdContext = Nil);
-begin
-end;
-
-function CheckOpenPort(IPAddress : String; Aport : Word):Boolean;
+function CheckOpenPort(IPAddress : String; Aport : Word; delay : integer = 1000):Boolean;
 var
-  LTCPServer: TIdTCPServer;
-  LBinding: TIdSocketHandle;
+  Sock:TTCPBlockSocket;
 begin
-  Result := True;
-  LTCPServer := TIdTCPServer.Create;
+  Result:=False;
+  Sock:=TTCPBlockSocket.create;
   try
-    try
-      with LTCPServer do
-      begin
-        DefaultPort   := APort;
-        LBinding      := Bindings.Add;
-        LBinding.IP   := IPAddress;
-        LBinding.Port := APort;
-        OnExecute     := TCPServer.TCPServerExecute;
-        Active        := True;
-      end;
-    finally
-      LTCPServer.Free;
-    end;
-  except on EIdCouldNotBindSocket do
-    Result := False;
+    Sock.NonBlockMode:=true;
+    Sock.Connect(IPAddress,IntToStr(Aport));
+    Sock.SocksTimeout:=delay;
+    Sock.SendString(#0);
+    Result:=Sock.LastError=0;
+    Sock.CloseSocket;
+  finally
+    Sock.free;
   end;
 end;
 
@@ -613,7 +592,7 @@ begin
   end;
 end;
 
-function GetFreeLocalPort( portStart : Word = 5000; portEnd : Word = 10000):Word;
+function GetFreeLocalPort( portStart : Word = 5000; portEnd : Word = 10000; delay : integer = 1000):Word;
 var
   trycount  : integer;
 begin
@@ -621,7 +600,7 @@ begin
   while( trycount < (portEnd - portStart) ) do
   begin
       Result:=portStart+Random(portEnd-portStart);
-      if CheckOpenPort('127.0.0.1', Result) then
+      if CheckOpenPort('127.0.0.1', Result, delay) then
          Exit;
   end;
   Result:=0;

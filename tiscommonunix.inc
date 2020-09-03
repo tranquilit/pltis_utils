@@ -105,60 +105,6 @@ begin
   end;
 end;
 
-function CheckOpenPort(dwPort : Word; ipAddressStr:AnsiString; timeout: integer = 5000):boolean;
-var
-  sock, sockflags, res: cint;
-  sin: sockaddr_in;
-  ip: AnsiString;
-begin
- Result := True; // TODO CHANGE, obviously
- {
-  Result := False;
-  sock := -1;
-
-  ip := GetIPFromHost(ipAddressStr);
-  if ip = '' then
-    Exit;
-
-  FillChar(sin, sizeof(sin), 0);
-  sin.sin_family := AF_INET;
-  sin.sin_port := htons(dwPort);
-  sin.sin_addr := StrToNetAddr(ip);
-
-  try
-    sock := fpsocket(AF_INET, SOCK_STREAM, 0);
-    if sock = -1 then
-      Exit;
-
-    sockflags := fpfcntl(sock, F_GetFl);
-    if sockflags = -1 then
-      Exit;
-    sockflags := sockflags or O_NONBLOCK;
-    if fpfcntl(sock, F_SetFl, sockflags) = -1 then
-      Exit;
-
-    res := fpconnect(sock, psockaddr(@sin), sizeof(sin));
-
-    if res = 0 then
-      Result := True
-    else if (res = -1) and ((fpGetErrno() = EsysEINPROGRESS) or (fpGetErrno() = EsysEALREADY)) then
-      Result := WaitForConnection(sock, timeout)
-    ;
-
-  finally
-    if sock <> -1 then
-      fpclose(sock);
-  end;
-   }
-end;
-
-function GetFreeLocalPort( portStart : Word = 5000; portEnd : Word = 10000):Word;
-begin
-  Result := portStart + random(portEnd-portStart);
-  while CheckOpenPort(Result,'127.0.0.1',500) do
-    Result := portStart + random(portEnd-portStart);
-end;
-
 function GetIPFromHost(const Hostname: AnsiString): AnsiString;
 type
   TaPInAddr = array[0..10] of pin_addr;

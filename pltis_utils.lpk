@@ -62,7 +62,7 @@
     </Files>
     <RequiredPkgs Count="2">
       <Item1>
-        <PackageName Value="indylaz"/>
+        <PackageName Value="laz_synapse"/>
       </Item1>
       <Item2>
         <PackageName Value="LazUtils"/>

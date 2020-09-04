@@ -23,7 +23,7 @@
 }
 
 
-function UserInGroupUnix(Group: Integer) : Boolean;
+function UserInGroupUnix(Group: Integer) : Boolean; // TO CHANGE
 begin
  { TODO }
   Result := False;
@@ -34,7 +34,7 @@ begin
   Result := UserInGroupUnix(Integer(Group));
 end;
 
-function WaitForConnection(sock: cint; timeout:LongInt):Boolean;
+function WaitForConnection(sock: cint; timeout:LongInt):Boolean; // TO CHANGE
 var
   wrsel: TFDSet;
   res, sockopt_res, optval: cint;
@@ -118,7 +118,7 @@ var
   {$ENDIF}
 begin
   Result := '';
-  phe := GetHostByName(PChar(Hostname){$IFDEF DARWIN}, phe {$ENDIF});
+  {$IFDEF LINUX}phe {$ELSE}res {$ENDIF} := GetHostByName(PChar(Hostname){$IFDEF DARWIN}, phe {$ENDIF});
   if {$IF defined(LINUX)} phe = nil {$ELSEIF defined(DARWIN)} not(Res) {$ENDIF} then
     Exit;
   {$IF defined(LINUX)}

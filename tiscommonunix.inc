@@ -134,7 +134,7 @@ function AppUserIniPath:Utf8String;
 begin
   if not DirectoryExistsUTF8(GetAppUserFolder) then
     MkDir(GetAppUserFolder);
-  Result:=IncludeTrailingPathDelimiter(GetAppUserFolder)+ApplicationName+'.ini';
+  Result:=IncludeTrailingPathDelimiter(IncludeTrailingPathDelimiter(GetAppUserFolder)+'.config')+ApplicationName+'.ini';
 end;
 
 function GetAppUserFolder : Utf8String;

@@ -549,7 +549,7 @@ begin
   result :=  GetSpecialFolderLocation(CSIDL_APPDATA);
 end;
 
-Function GetAppUserFolder : Utf8String;
+function GetAppUserFolder : Utf8String;
 begin
   Result := IncludeTrailingPathDelimiter(GetSpecialFolderLocation(CSIDL_APPDATA)) + ApplicationName;
 end;

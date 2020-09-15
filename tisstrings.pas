@@ -16,9 +16,8 @@ unit tisstrings;
 
 {$mode objfpc}{$H+}
 {$define UNICODE_RTL_DATABASE}
+{$modeswitch typehelpers}
 
-{.$mode delphiunicode}
-{.$codepage UTF8}
 interface
 
 uses
@@ -125,7 +124,6 @@ resourcestring
 
 type
   Float = Extended;
-  TDynStringArray = array of string;
   TCharValidator  = function(const C: Char): Boolean;
 
 function ArrayContainsChar(const Chars: array of Char; const C: Char): Boolean; overload;
@@ -162,7 +160,7 @@ function StrSearch(const Substr, S: string; const Index: SizeInt = 1): SizeInt;
 function StrSuffixIndex(const S: string; const Suffixes: array of string): SizeInt;
 
 // add a string to a list
-procedure StrAppend(var AList: TDynStringArray;const S: string);
+procedure StrAppend(var AList: TStringArray;const S: string);
 
 // String Transformation Routines
 function StrCenter(const S: string; L: SizeInt; C: Char = ' '): string;
@@ -248,7 +246,7 @@ function StrWord(var S: PChar; out Word: string): Boolean; overload;
 function StrIdent(const S: string; var Index: SizeInt; out Ident: string): Boolean; overload;
 function StrIdent(var S: PChar; out Ident: string): Boolean; overload;
 
-function ArrayOf(List: TStrings): TDynStringArray; overload;
+function ArrayOf(List: TStrings): TStringArray; overload;
 
 // Character Test Routines
 function CharEqualNoCase(const C1, C2: Char): Boolean; {$IFDEF SUPPORTS_INLINE} inline; {$ENDIF}
@@ -286,10 +284,21 @@ function CharLower(const C: Char): Char; {$IFDEF SUPPORTS_INLINE} inline; {$ENDI
 function CharUpper(const C: Char): Char; {$IFDEF SUPPORTS_INLINE} inline; {$ENDIF}
 function CharToggleCase(const C: Char): Char;
 
-function StrSplit(St: String; Sep: String;Trimmed:Boolean=False;MaxSplit:Integer=-1): TDynStringArray;
-function StrJoin(Sep: String; StrArray : TDynStringArray): String;
-function StrSplitLines(St: String): TDynStringArray;
+function StrSplit(St: String; Sep: String;Trimmed:Boolean=False;MaxSplit:Integer=-1): TStringArray;
+function StrJoin(Sep: String; StrArray : TStringArray): String;
+function StrSplitLines(St: String): TStringArray;
 
+// Return the intersection if 2 array of string
+function StrArrayIntersect(const a1,a2:TStringArray):TStringArray;
+
+
+{ TStringArrayHelper }
+type
+  TStringArrayHelper = type helper for TStringArray
+    procedure Append(const a:String);
+    function Intersect(const other:TStringArray):TStringArray;
+
+  end;
 
 implementation
 
@@ -630,7 +639,7 @@ begin
   Result := StrIndex(S, List,CaseSensitive) > -1;
 end;
 
-procedure StrAppend(var AList: TDynStringArray;const S: string);
+procedure StrAppend(var AList: TStringArray;const S: string);
 begin
   SetLength(AList,Length(AList)+1);
   AList[High(Alist)] := S;
@@ -2143,7 +2152,7 @@ begin
   end;
 end;
 
-function ArrayOf(List: TStrings): TDynStringArray;
+function ArrayOf(List: TStrings): TStringArray;
 var
   I: SizeInt;
 begin
@@ -2157,7 +2166,7 @@ begin
     Result := nil;
 end;
 
-function StrSplit(St: String; Sep: String;Trimmed:Boolean=False;MaxSplit:Integer=-1): TDynStringArray;
+function StrSplit(St: String; Sep: String;Trimmed:Boolean=False;MaxSplit:Integer=-1): TStringArray;
 var
   tok : String;
   len : integer;
@@ -2188,7 +2197,7 @@ begin
   until St='';
 end;
 
-function StrJoin(Sep: String; StrArray: TDynStringArray): String;
+function StrJoin(Sep: String; StrArray: TStringArray): String;
 var
   i:integer;
 begin
@@ -2201,7 +2210,7 @@ begin
   end;
 end;
 
-function StrSplitLines(St: String): TDynStringArray;
+function StrSplitLines(St: String): TStringArray;
 var
   st2:String;
 begin
@@ -2490,6 +2499,55 @@ begin
   {$ENDIF ~UNICODE_RTL_DATABASE}
 end;
 
+
+function StrArrayIntersect(const a1,a2:TStringArray):TStringArray;
+var
+  i,j:integer;
+begin
+  SetLength(Result,0);
+  for i:=0 to Length(a1)-1 do
+  begin
+    for j := 0 to Length(a2)-1 do
+    begin
+      if a1[i] = a2[j] then
+      begin
+        SetLength(result,Length(Result)+1);
+        result[Length(result)-1] := a1[i];
+      end;
+    end;
+  end;
+end;
+
+
+{ TStringArrayHelper }
+procedure TStringArrayHelper.Append(const a: String);
+begin
+  SetLength(self,Length(Self)+1);
+  Self[Length(Self)-1] := a;
+end;
+
+function TStringArrayHelper.Intersect(const other:TStringArray):TStringArray;
+var
+  i,j,ResultSize:integer;
+begin
+  if length(self)<length(other) then
+    SetLength(Result,length(self))
+  else
+    SetLength(Result,length(other));
+  ResultSize := 0;
+  for i:=0 to Length(self)-1 do
+  begin
+    for j := 0 to Length(other)-1 do
+    begin
+      if self[i] = other[j] then
+      begin
+        result[ResultSize] := self[i];
+        Inc(ResultSize);
+      end;
+    end;
+  end;
+  SetLength(result,ResultSize);
+end;
 
 
 end.

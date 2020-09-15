@@ -904,7 +904,7 @@ begin
   end;
 end;
 
-function GetGroups(srvName, usrName: WideString):TDynStringArray;
+function GetGroups(srvName, usrName: WideString):TStringArray;
 var
   dwEntriesRead, dwEntriesTotal: DWORD;
   grpi0: Pointer;
@@ -927,7 +927,7 @@ begin
   end;
 end;
 
-function GetLocalGroups:TDynStringArray;
+function GetLocalGroups:TStringArray;
 var
   dwEntriesRead, dwEntriesTotal,resumehandle: DWORD;
   grpi0: Pointer;
@@ -951,7 +951,7 @@ begin
   end;
 end;
 
-function GetLocalGroupMembers(GroupName:WideString):TDynStringArray;
+function GetLocalGroupMembers(GroupName:WideString):TStringArray;
 var
   dwEntriesRead, dwEntriesTotal,resumehandle: DWORD;
   grpi0: Pointer;

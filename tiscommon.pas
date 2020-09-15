@@ -96,9 +96,9 @@ function UserLogin(user,password,domain:String):THandle;
 function UserDomain(htoken:THandle):AnsiString;
 function OnSystemAccount: Boolean;
 
-function GetGroups(srvName, usrName: WideString):TDynStringArray;
-function GetLocalGroups:TDynStringArray;
-function GetLocalGroupMembers(GroupName:WideString):TDynStringArray;
+function GetGroups(srvName, usrName: WideString):TStringArray;
+function GetLocalGroups:TStringArray;
+function GetLocalGroupMembers(GroupName:WideString):TStringArray;
 
 const
   CSIDL_LOCAL_APPDATA = $001c;

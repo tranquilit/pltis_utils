@@ -284,6 +284,8 @@ function CharLower(const C: Char): Char; {$IFDEF SUPPORTS_INLINE} inline; {$ENDI
 function CharUpper(const C: Char): Char; {$IFDEF SUPPORTS_INLINE} inline; {$ENDIF}
 function CharToggleCase(const C: Char): Char;
 
+operator in(const a:string;b:Array Of String):Boolean;inline;
+
 function StrSplit(St: String; Sep: String;Trimmed:Boolean=False;MaxSplit:Integer=-1): TStringArray;
 function StrJoin(Sep: String; StrArray : TStringArray): String;
 function StrSplitLines(St: String): TStringArray;
@@ -297,12 +299,26 @@ type
   TStringArrayHelper = type helper for TStringArray
     procedure Append(const a:String);
     function Intersect(const other:TStringArray):TStringArray;
-
+    function Join(Sep: String): String;
   end;
 
 implementation
 
 uses character,StrUtils;
+
+
+operator in(const a:string;b:Array Of String):Boolean;inline;
+var i:integer;
+begin
+  Result := False;
+  for i :=Low(b) to High(b) do
+    if a = b[i] then
+    begin
+      Result := True;
+      Break;
+    end;
+end;
+
 
 function ArrayContainsChar(const Chars: array of Char; const C: Char): Boolean;
 var
@@ -2547,6 +2563,19 @@ begin
     end;
   end;
   SetLength(result,ResultSize);
+end;
+
+function TStringArrayHelper.Join(Sep: String): String;
+var
+  i:integer;
+begin
+  Result := '';
+  for i:=0 to length(Self)-1 do
+  begin
+    Result:=Result+Self[i];
+    if i<length(Self)-1 then
+      Result := Result+Sep;
+  end;
 end;
 
 

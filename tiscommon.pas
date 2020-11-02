@@ -205,10 +205,15 @@ begin
   Sock:=TTCPBlockSocket.create;
   try
     Sock.NonBlockMode:=true;
+    Sock.ConnectionTimeout := delay;
     Sock.Connect(IPAddress,IntToStr(Aport));
-    Sock.SocksTimeout:=delay;
-    Sock.SendString(#0);
-    Result:=Sock.LastError=0;
+    if (Sock.LastError=0) and Sock.CanWrite(delay) then
+    begin
+      Sock.SendByte(0);
+      Result:=Sock.LastError=0;
+    end
+    else
+      Result := False;
     Sock.CloseSocket;
   finally
     Sock.free;

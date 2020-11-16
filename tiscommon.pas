@@ -153,14 +153,25 @@ function MakePath(const parts:array of Utf8String):Utf8String;
 function GetUniqueTempdir(Prefix: Utf8String): Utf8String;
 
 function SortableVersion(VersionString:String):String;
+
+// Compare package versions like 1.2.3-4
+// Compare first part before '-' then 2nd part after '-'
+// returns -1 if v1<v2, 0 if v1=v2 and +1 if v1>v2
+// try to convert each version memebr into integer to compare
+// if member is not an int, compare as string.
 function CompareVersion(const v1,v2:String):integer;
 
+// try to open a tcp connection to IPAdress on port APort.
+//  return True if connection is OK within delau msecs
 function CheckOpenPort(IPAddress : String; Aport : Word; delay : integer = 1000):Boolean;
 function GetFreeLocalPort( portStart : Word = 5000; portEnd : Word = 10000; delay : integer = 1000):Word;
 function GetIPFromHost(const Hostname: String): String;
 
+// Starts a process as shell with cmd command line. Returns stdout of process.
 function RunTask(cmd: utf8string;var ExitStatus:integer;WorkingDir:utf8String='';ShowWindow:TShowWindowOptions=swoHIDE): utf8string;
 
+// Get a command line argument with either /id=value  -id=value or --id=value
+// if ID is not found in command line, returns Default
 function GetCmdParams(ID:Utf8String;Default:Utf8String=''):Utf8String;
 
 procedure ResetMemory(out P; Size: Longint);
@@ -363,6 +374,14 @@ end;
 function CompareVersion(const v1,v2:String):integer;
 var
   version1,version2,pack1,pack2,tok1,tok2:String;
+
+  function CompareInt(const i1,i2:Int64):integer; inline;
+  begin
+    if i1<i2 then exit(-1)
+    else if i1=i2 then exit(0)
+    else exit(1)
+  end;
+
 begin
   // '1.2.3-4';
   pack1 := v1;
@@ -377,7 +396,7 @@ begin
     tok2 := StrToken(version2,'.');
     if (tok1<>'') or (tok2<>'') then
     try
-      result := StrToInt(tok1)-StrToInt(tok2);
+      result := CompareInt(StrToInt(tok1),StrToInt(tok2));
     except
       result := CompareStr(tok1,tok2)
     end;
@@ -390,7 +409,7 @@ begin
   begin
     if (pack1<>'') or (pack2<>'') then
     try
-      result := StrToInt(pack1)-StrToInt(pack2);
+      result := CompareInt(StrToInt(pack1),StrToInt(pack2));
     except
       result := CompareStr(pack1,pack2)
     end;

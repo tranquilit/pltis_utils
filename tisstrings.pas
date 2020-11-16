@@ -239,7 +239,10 @@ procedure StringToFile(const FileName: string; const Contents: RawByteString;
   Append: Boolean = False);
 
 
+// returns starting part of S until Separator or end of S is reached
+// Truncate start of S.
 function StrToken(var S: string; Separator: String): String;
+function StrToken(var S: PChar; Separator: String): String;
 procedure StrTokenToStrings(S: string; Separator: String; const List: TStrings);
 function StrWord(const S: string; var Index: SizeInt; out Word: string): Boolean; overload;
 function StrWord(var S: PChar; out Word: string): Boolean; overload;
@@ -307,7 +310,7 @@ implementation
 uses character,StrUtils;
 
 
-operator in(const a:string;b:Array Of String):Boolean;inline;
+operator in(const a: string; b: array of String): Boolean;
 var i:integer;
 begin
   Result := False;
@@ -1956,20 +1959,27 @@ begin
   end;
 end;
 
-function StrToken(var S: Utf8string; Separator: Utf8String): Utf8String;
+function StrToken(var S: PChar; Separator: String): String;
 var
   I: SizeInt;
+  S2: PChar;
 begin
-  I := Pos(Separator, S);
-  if I <> 0 then
+  If S=Nil then
+  begin
+    Result := '';
+    Exit;
+  end;
+
+  S2 := AnsiStrPos(S,PChar(Separator));
+  if S2 <> Nil then
   begin
     Result := Copy(S, 1, I - 1);
-    Delete(S, 1,I+Length(Separator)-1);
+    S := S2+Length(Separator);
   end
   else
   begin
-    Result := S;
-    S := '';
+    Result := Copy(S, 1, I - 1);
+    S := Nil;
   end;
 end;
 

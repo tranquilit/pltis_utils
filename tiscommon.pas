@@ -374,6 +374,8 @@ end;
 function CompareVersion(const v1,v2:String):integer;
 var
   version1,version2,pack1,pack2,tok1,tok2:String;
+  I1,I2: Int64;
+  Error: Integer;
 
   function CompareInt(const i1,i2:Int64):integer; inline;
   begin
@@ -395,10 +397,18 @@ begin
     tok1 := StrToken(version1,'.');
     tok2 := StrToken(version2,'.');
     if (tok1<>'') or (tok2<>'') then
-    try
-      result := CompareInt(StrToInt(tok1),StrToInt(tok2));
-    except
-      result := CompareStr(tok1,tok2)
+    begin
+      Val(Tok1, I1, Error);
+      if Error=0 then
+      begin
+        Val(Tok2, I2, Error);
+        if Error=0 then
+          result := CompareInt(I1,I2)
+        else
+          result := CompareStr(tok1,tok2)
+      end
+      else
+        result := CompareStr(tok1,tok2);
     end;
     if (result<>0) or (tok1='') or (tok2='') then
       break;

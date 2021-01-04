@@ -46,10 +46,14 @@ begin
   if level>=currentLogLevel then
   begin
     if IsConsole then
-      WriteLn(Msg)
+      WriteLn(Format('%s [%s] %s',[FormatDateTime('YYYY-mm-dd hh:nn:ss',Now),StrLogLevel[level],Msg]))
     else
       if Assigned(loghook) then
         loghook(Msg);
+    {$ifdef windows}
+    if level=DEBUG then
+      ODS(Msg);
+    {$endif}
   end;
 end;
 

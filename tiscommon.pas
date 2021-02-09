@@ -159,7 +159,7 @@ function SortableVersion(VersionString:String):String;
 // returns -1 if v1<v2, 0 if v1=v2 and +1 if v1>v2
 // try to convert each version memebr into integer to compare
 // if member is not an int, compare as string.
-function CompareVersion(const v1,v2:String):integer;
+function CompareVersion(const v1,v2:String;MembersCount:Integer=-1):integer;
 
 // try to open a tcp connection to IPAdress on port APort.
 //  return True if connection is OK within delau msecs
@@ -371,11 +371,12 @@ begin
   until tok='';
 end;
 
-function CompareVersion(const v1,v2:String):integer;
+function CompareVersion(const v1,v2:String;MembersCount:Integer=-1):integer;
 var
   version1,version2,pack1,pack2,tok1,tok2:String;
   I1,I2: Int64;
   Error: Integer;
+  MemberIdx:integer;
 
   function CompareInt(const i1,i2:Int64):integer; inline;
   begin
@@ -396,8 +397,16 @@ begin
   repeat
     tok1 := StrToken(version1,'.');
     tok2 := StrToken(version2,'.');
+    MemberIdx:=1;
+
     if (tok1<>'') or (tok2<>'') then
     begin
+      if (MemberIdx>0) and (MemberIdx<=MembersCount) then
+      begin
+        If tok1='' then tok1 := '0';
+        If tok2='' then tok2 := '0';
+      end;
+
       Val(Tok1, I1, Error);
       if Error=0 then
       begin
@@ -410,8 +419,9 @@ begin
       else
         result := CompareStr(tok1,tok2);
     end;
-    if (result<>0) or (tok1='') or (tok2='') then
+    if (result<>0) or (tok1='') or (tok2='') or ((MemberIdx>0) and (MemberIdx>=MembersCount)) then
       break;
+    inc(MemberIdx);
   until (result<>0) or (tok1='') or (tok2='');
 
   // packaging

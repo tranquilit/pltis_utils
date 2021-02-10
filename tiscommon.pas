@@ -401,7 +401,7 @@ begin
 
     if (tok1<>'') or (tok2<>'') then
     begin
-      if (MemberIdx>0) and (MemberIdx<=MembersCount) then
+      if (MembersCount>0) and (MemberIdx<=MembersCount) then
       begin
         If tok1='' then tok1 := '0';
         If tok2='' then tok2 := '0';

@@ -419,7 +419,7 @@ begin
       else
         result := CompareStr(tok1,tok2);
     end;
-    if (result<>0) or (tok1='') or (tok2='') or ((MemberIdx>0) and (MemberIdx>=MembersCount)) then
+    if (result<>0) or (tok1='') or (tok2='') or ((MembersCount>0) and (MemberIdx>=MembersCount)) then
       break;
     inc(MemberIdx);
   until (result<>0) or (tok1='') or (tok2='');

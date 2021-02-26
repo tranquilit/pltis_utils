@@ -1189,3 +1189,10 @@ begin
   end;
 end;
 
+function ProgramFilesX86:String;
+begin
+  result := SysUtils.GetEnvironmentVariable('PROGRAMFILES(X86)');
+  if result = '' then
+    result := SysUtils.GetEnvironmentVariable('PROGRAMFILES')
+end;
+

@@ -128,6 +128,8 @@ function GetServiceStatusByName(const AServer,AServiceName:ansistring):TServiceS
 function StartServiceByName(const AServer,AServiceName: AnsiString):Boolean;
 function StopServiceByName(const AServer, AServiceName: AnsiString):Boolean;
 
+function ProgramFilesX86:String;
+
 {$ELSEIF defined(UNIX)}
 function UserInGroup(Group :DWORD) : Boolean;
 

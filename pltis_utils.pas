@@ -4,11 +4,12 @@
 
 unit pltis_utils;
 
+{$warn 5023 off : no warning about unused units}
 interface
 
 uses
   tisutils, tisdatetime, tisstrings, tisinifiles, tiscommon, tislogging, 
-  tiswinhttp, tiswinhttpini, uSMBIOS, LazarusPackageIntf;
+  tiswinhttp, tiswinhttpini, LazarusPackageIntf;
 
 implementation
 

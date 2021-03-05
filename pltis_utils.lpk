@@ -14,7 +14,7 @@
     </CompilerOptions>
     <Description Value="Various strings, datetime, etc routines"/>
     <Version Major="1" Minor="1"/>
-    <Files Count="11">
+    <Files Count="10">
       <Item1>
         <Filename Value="tisutils.pas"/>
         <UnitName Value="tisutils"/>
@@ -55,18 +55,17 @@
         <Filename Value="tiscommonwin.inc"/>
         <Type Value="Include"/>
       </Item10>
-      <Item11>
-        <Filename Value="uSMBIOS.pas"/>
-        <UnitName Value="uSMBIOS"/>
-      </Item11>
     </Files>
-    <RequiredPkgs Count="2">
+    <RequiredPkgs Count="3">
       <Item1>
-        <PackageName Value="laz_synapse"/>
+        <PackageName Value="tsmbios"/>
       </Item1>
       <Item2>
-        <PackageName Value="LazUtils"/>
+        <PackageName Value="laz_synapse"/>
       </Item2>
+      <Item3>
+        <PackageName Value="LazUtils"/>
+      </Item3>
     </RequiredPkgs>
     <UsageOptions>
       <UnitPath Value="$(PkgOutDir)"/>

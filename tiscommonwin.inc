@@ -492,7 +492,7 @@ begin
     hr := SHGetFolderPathW(0,csidl or CSIDL_FLAG_CREATE,0,0, @APATH[0]);
     if hr = S_OK then
     begin
-      Len := StrLen(APath);
+      Len := StrLenW(APath);
       SetLength(WS, Len);
       System.Move(APath[0], WS[1], Len * SizeOf(WideChar));
       Result := AppendPathDelim(Utf8Decode(APath));

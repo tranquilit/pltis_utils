@@ -45,11 +45,10 @@ procedure Logger(Msg: String;level:LogLevel=WARNING);
 begin
   if level>=currentLogLevel then
   begin
-    if IsConsole then
-      WriteLn(Format('%s [%s] %s',[FormatDateTime('YYYY-mm-dd hh:nn:ss',Now),StrLogLevel[level],Msg]))
-    else
-      if Assigned(loghook) then
-        loghook(Msg);
+    if Assigned(loghook) then
+      loghook(Msg)
+    else if IsConsole then
+      WriteLn(Format('%s [%s] %s',[FormatDateTime('YYYY-mm-dd hh:nn:ss',Now),StrLogLevel[level],Msg]));
     {$ifdef windows}
     if level=DEBUG then
       ODS(Msg);

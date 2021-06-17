@@ -236,7 +236,6 @@ function DomainSID: String;
 var
   UserModalsInfo    : PUSER_MODALS_INFO_2;
   dwRet             : DWORD;
-  SID               : PSID;
 begin
   UserModalsInfo := nil;
   dwRet := NetUserModalsGet(nil, 2, Pointer(UserModalsInfo));
@@ -366,9 +365,9 @@ begin
 end;
 
 
-procedure AddToUserPath(APath:Utf8String);
+procedure AddToUserPath(APath:String);
 var
-  SystemPath : Utf8String;
+  SystemPath : String;
 begin
   with TRegistry.Create do
   try
@@ -388,10 +387,10 @@ begin
 end;
 
 
-procedure UpdateApplication(fromURL:Utf8String;SetupExename,SetupParams,ExeName,RestartParam:Utf8String);
+procedure UpdateApplication(fromURL:String;SetupExename,SetupParams,ExeName,RestartParam:String);
 var
   bat: TextFile;
-  tempdir,tempfn,updateBatch,zipfn,version : Utf8String;
+  tempdir,tempfn,updateBatch,zipfn,version : String;
   files:TStringList;
   UnZipper: TUnZipper;
   i,hinstance:integer;
@@ -479,7 +478,7 @@ begin
 
 end;
 
-function GetSpecialFolderLocation(csidl: Integer; ForceFolder: Boolean = False ): Utf8String;
+function GetSpecialFolderLocation(csidl: Integer; ForceFolder: Boolean = False ): String;
 Var
   APath : Array[0..MAX_PATH] of WideChar;
   WS: UnicodeString;
@@ -501,7 +500,7 @@ begin
   end;
 end;
 
-function GetSendToFolder: Utf8String;
+function GetSendToFolder: String;
 var
   Registry: TRegistry;
 begin
@@ -533,48 +532,48 @@ begin
   Result := sUserName;
 end;
 
-function GetPersonalFolder:Utf8String;
+function GetPersonalFolder:String;
 begin
   result := GetSpecialFolderLocation(CSIDL_PERSONAL)
 end;
 
-function GetLocalAppdataFolder:Utf8String;
+function GetLocalAppdataFolder:String;
 begin
   result :=  GetSpecialFolderLocation(CSIDL_LOCAL_APPDATA);
 end;
 
 
-function GetAppdataFolder:Utf8String;
+function GetAppdataFolder:String;
 begin
   result :=  GetSpecialFolderLocation(CSIDL_APPDATA);
 end;
 
-function GetAppUserFolder : Utf8String;
+function GetAppUserFolder : String;
 begin
   Result := IncludeTrailingPathDelimiter(GetSpecialFolderLocation(CSIDL_APPDATA)) + ApplicationName;
 end;
 
-function GetStartMenuFolder: Utf8String;
+function GetStartMenuFolder: String;
 begin
   result := GetSpecialFolderLocation(CSIDL_STARTMENU);
 end;
 
-function GetCommonStartMenuFolder: Utf8String;
+function GetCommonStartMenuFolder: String;
 begin
   result := GetSpecialFolderLocation(CSIDL_COMMON_STARTMENU);
 end;
 
-function GetStartupFolder: Utf8String;
+function GetStartupFolder: String;
 begin
   result := GetSpecialFolderLocation(CSIDL_STARTUP);
 end;
 
-function GetCommonStartupFolder: Utf8String;
+function GetCommonStartupFolder: String;
 begin
   result := GetSpecialFolderLocation(CSIDL_COMMON_STARTUP);
 end;
 
-function GetCurrentUser: Utf8String;
+function GetCurrentUser: String;
 var
   charBuffer: array[0..128] of WideChar;
   intgBufferSize: DWORD;
@@ -591,9 +590,9 @@ begin
 end;
 
 // to store use specific settings for this application
-function Appuserinipath:Utf8String;
+function Appuserinipath:String;
 var
-  dir : Utf8String;
+  dir : String;
 begin
   dir := IncludeTrailingPathDelimiter(GetAppdataFolder)+ApplicationName;
   if not DirectoryExistsUTF8(dir) then
@@ -641,7 +640,7 @@ end;
     end; // TFixedFileInfo
 
 
-function GetApplicationVersion(FileName: Utf8String): Utf8String;
+function GetApplicationVersion(FileName: String): String;
 var
     dwHandle, dwVersionSize : DWORD;
     strSubBlock             : String;
@@ -996,7 +995,6 @@ var
   cbBuf: Cardinal;
   ptiUser: PTOKEN_USER;
   snu: SID_NAME_USE;
-  ProcessHandle: THandle;
   UserSize, DomainSize: DWORD;
   bSuccess: Boolean;
   user,domain:AnsiString;

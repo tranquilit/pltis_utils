@@ -30,13 +30,13 @@ uses
 {$ENDIF}
 ;
 
-{$IF defined(WINDOWS)}
-procedure UpdateApplication(fromURL:Utf8String;SetupExename,SetupParams,ExeName,RestartParam:Utf8String);
+{$IFDEF WINDOWS}
+procedure UpdateApplication(fromURL:String;SetupExename,SetupParams,ExeName,RestartParam:String);
 function UserInGroup(Group :DWORD) : Boolean;
 
 function IsWin64: Boolean;
 
-procedure AddToUserPath(APath:Utf8String);
+procedure AddToUserPath(APath:String);
 
 function EnablePrivilege(const Privilege: string; fEnable: Boolean; out PreviousState: Boolean): DWORD;
 
@@ -60,19 +60,19 @@ function GetJoinInformation:String;
 function IsAdmin: LongBool;
 function GetAdminSid: PSID;
 
-function GetApplicationVersion(FileName:Utf8String=''): Utf8String;
+function GetApplicationVersion(FileName:String=''): String;
 
 function GetOSVersionInfo: TOSVersionInfoEx;
 function IsWinXP:Boolean;
 
-function GetPersonalFolder:Utf8String;
-function GetLocalAppdataFolder:Utf8String;
-function GetAppdataFolder:Utf8String;
+function GetPersonalFolder:String;
+function GetLocalAppdataFolder:String;
+function GetAppdataFolder:String;
 
-function GetStartMenuFolder: Utf8String;
-function GetCommonStartMenuFolder: Utf8String;
-function GetStartupFolder: Utf8String;
-function GetCommonStartupFolder: Utf8String;
+function GetStartMenuFolder: String;
+function GetCommonStartMenuFolder: String;
+function GetStartupFolder: String;
+function GetCommonStartupFolder: String;
 
 const
   NameUnknown       = 0; // Unknown name type.
@@ -130,13 +130,15 @@ function StopServiceByName(const AServer, AServiceName: AnsiString):Boolean;
 
 function ProgramFilesX86:String;
 
-{$ELSEIF defined(UNIX)}
+{$ELSE}
+{$IFDEF UNIX}
 function UserInGroup(Group :DWORD) : Boolean;
 
-function GetApplicationVersion(FileName:Utf8String=''): Utf8String;
+function GetApplicationVersion(FileName:String=''): String;
+{$ENDIF}
 {$ENDIF}
 
-procedure UnzipFile(ZipFilePath,OutputPath:Utf8String);
+procedure UnzipFile(ZipFilePath,OutputPath:String);
 
 function GetSystemProductName: String;
 function GetSystemManufacturer: String;
@@ -149,10 +151,10 @@ function GetUserName : String;
 function GetWorkgroupName: String;
 function GetDomainName: String;
 
-function AppUserIniPath:Utf8String;
-function GetAppUserFolder:Utf8String;
-function MakePath(const parts:array of Utf8String):Utf8String;
-function GetUniqueTempdir(Prefix: Utf8String): Utf8String;
+function AppUserIniPath:String;
+function GetAppUserFolder:String;
+function MakePath(const parts:array of String):String;
+function GetUniqueTempdir(Prefix: String): String;
 
 function SortableVersion(VersionString:String):String;
 
@@ -170,11 +172,11 @@ function GetFreeLocalPort( portStart : Word = 5000; portEnd : Word = 10000; dela
 function GetIPFromHost(const Hostname: String): String;
 
 // Starts a process as shell with cmd command line. Returns stdout of process.
-function RunTask(cmd: utf8string;var ExitStatus:integer;WorkingDir:utf8String='';ShowWindow:TShowWindowOptions=swoHIDE): utf8string;
+function RunTask(cmd: String;out ExitStatus:integer;WorkingDir:String='';ShowWindow:TShowWindowOptions=swoHIDE): String;
 
 // Get a command line argument with either /id=value  -id=value or --id=value
 // if ID is not found in command line, returns Default
-function GetCmdParams(ID:Utf8String;Default:Utf8String=''):Utf8String;
+function GetCmdParams(ID:String;Default:String=''):String;
 
 procedure ResetMemory(out P; Size: Longint);
 
@@ -198,7 +200,7 @@ uses
 {$ENDIF}
   ;
 
-procedure Logger(Msg: Utf8String;level:LogLevel=WARNING);
+procedure Logger(Msg: String;level:LogLevel=WARNING);
 begin
   if level>=currentLogLevel then
   begin
@@ -239,7 +241,7 @@ end;
 {$i tiscommonunix.inc}
 {$ENDIF}
 
-function MakePath(const parts:array of Utf8String):Utf8String;
+function MakePath(const parts:array of String):String;
 var
   i:integer;
 begin
@@ -247,12 +249,12 @@ begin
   for i:=low(parts) to high(parts) do
   begin
     result := Result+parts[i];
-    if (i<High(parts)) and (parts[i][length(parts[i])] <> PathDelim) then
+    if (i<High(parts)) and (parts[i]<>'') and (parts[i][length(parts[i])] <> PathDelim) then
       result := result+PathDelim;
   end;
 end;
 
-procedure UnzipFile(ZipFilePath, OutputPath: Utf8String);
+procedure UnzipFile(ZipFilePath, OutputPath: String);
 var
   UnZipper: TUnZipper;
 begin
@@ -267,10 +269,10 @@ begin
   end;
 end;
 
-function GetUniqueTempdir(Prefix: Utf8String): Utf8String;
+function GetUniqueTempdir(Prefix: String): String;
 var
   I: Integer;
-  Start: Utf8String;
+  Start: String;
 begin
   Start:=GetTempDir;
   if (Prefix='') then
@@ -581,10 +583,10 @@ begin
   end;
 end;
 
-function GetCmdParams(ID:Utf8String;Default:Utf8String=''):Utf8String;
+function GetCmdParams(ID:String;Default:String=''):String;
 var
     i:integer;
-    S:Utf8String;
+    S:String;
   found:Boolean;
 begin
     Result:='';
@@ -606,7 +608,7 @@ begin
     Result:=Default;
 end;
 
-function RunTask(cmd: utf8string;var ExitStatus:integer;WorkingDir:utf8String='';ShowWindow:TShowWindowOptions=swoHIDE): utf8string;
+function RunTask(cmd: String;out ExitStatus:integer;WorkingDir:String='';ShowWindow:TShowWindowOptions=swoHIDE): String;
 var
   AProcess: TProcess;
   AStringList: TStringList;

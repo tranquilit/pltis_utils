@@ -287,7 +287,7 @@ function CharLower(const C: Char): Char; {$IFDEF SUPPORTS_INLINE} inline; {$ENDI
 function CharUpper(const C: Char): Char; {$IFDEF SUPPORTS_INLINE} inline; {$ENDIF}
 function CharToggleCase(const C: Char): Char;
 
-operator in(const a:string;b:Array Of String):Boolean;inline;
+operator in(const a:string;const b:Array Of String):Boolean;inline;
 
 function StrSplit(St: String; Sep: String;Trimmed:Boolean=False;MaxSplit:Integer=-1): TStringArray;
 function StrJoin(Sep: String; StrArray : TStringArray): String;
@@ -303,6 +303,8 @@ type
     procedure Append(const a:String);
     function Intersect(const other:TStringArray):TStringArray;
     function Join(Sep: String): String;
+    procedure Extend(const other:Array of String);
+    procedure ExtendMissing(const other:Array of String);
   end;
 
 implementation
@@ -310,8 +312,9 @@ implementation
 uses character,StrUtils;
 
 
-operator in(const a: string; b: array of String): Boolean;
-var i:integer;
+operator in(const a: string; const b: array of String): Boolean;
+var
+  i:integer;
 begin
   Result := False;
   for i :=Low(b) to High(b) do
@@ -2586,6 +2589,23 @@ begin
     if i<length(Self)-1 then
       Result := Result+Sep;
   end;
+end;
+
+procedure TStringArrayHelper.Extend(const other: array of String);
+var
+  S: String;
+begin
+  for S in Other do
+    Self.Append(S);
+end;
+
+procedure TStringArrayHelper.ExtendMissing(const other: array of String);
+var
+  S: String;
+begin
+  for S in Other do
+    if not (S in Self) then
+      Self.Append(S);
 end;
 
 

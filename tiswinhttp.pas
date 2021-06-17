@@ -27,8 +27,7 @@ unit tiswinhttp;
 
 {functions to get files and string using Winet windows http facilities}
 
-{$mode delphiunicode}
-{$codepage UTF8}
+{$mode objfpc}{$H+}
 
 {$ifndef windows}
 
@@ -74,7 +73,6 @@ var
 begin
   sAppName := ExtractFileName(ParamStr(0));
   Result := sAppName+' '+GetFileDescription(ParamStr(0));
-
 end;
 
 Function wget(const fileURL, DestFileName: Utf8String; CBReceiver:TObject=Nil;progressCallback:TProgressCallback=Nil;enableProxy:Boolean=False;forceReload:Boolean=True;const UserAgent: ansistring=''): boolean;
@@ -164,14 +162,9 @@ function httpGetHeaders(url: ansistring; enableProxy:Boolean= False;
    ConnectTimeout:integer=4000;SendTimeOut:integer=60000;ReceiveTimeOut:integer=60000;user:AnsiString='';password:AnsiString='';VerifyCert:Boolean=False):RawByteString;
 var
   hInet,hUrl,hConnect: HINTERNET;
-  buffer: array[1..1024] of byte;
   OutBufferLen:Cardinal;
   OutBuffer:PAnsiChar;
-  flags,bytesRead,dwError,port : DWORD;
-  pos:integer;
-  dwindex,dwcodelen,dwread,dwNumber: cardinal;
-  dwcode : array[1..20] of ansichar;
-  res    : PAnsiChar;
+  flags : DWORD;
   doc,error: AnsiString;
   uri :TURI;
   puser,ppassword:PAnsiChar;
@@ -433,13 +426,12 @@ var
   ErrorMsg:AnsiString;
 
   buffer: array[1..1024] of byte;
-  flags,bytesRead,dwError : DWORD;
+  flags,bytesRead : DWORD;
   pos:integer;
-  dwindex,dwcodelen,dwread,dwNumber: cardinal;
+  dwindex,dwcodelen: cardinal;
   dwcode : array[1..20] of Ansichar;
   res    : PAnsiChar;
 
-  timeout:integer;
   puser,ppassword:PAnsiChar;
 
 const
@@ -502,7 +494,6 @@ begin
         if HttpQueryInfo(hReq, HTTP_QUERY_STATUS_CODE, @dwcode, dwcodeLen, dwIndex) then
         begin
           res := pAnsichar(@dwcode);
-          dwNumber := sizeof(Buffer)-1;
           if (res ='200') or (res ='302') then
           begin
             Result:='';

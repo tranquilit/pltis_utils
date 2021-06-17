@@ -130,19 +130,19 @@ begin
   {$ENDIF}
 end;
 
-function AppUserIniPath:Utf8String;
+function AppUserIniPath:String;
 begin
   if not DirectoryExistsUTF8(GetAppUserFolder) then
     MkDir(GetAppUserFolder);
   Result:=IncludeTrailingPathDelimiter(IncludeTrailingPathDelimiter(GetAppUserFolder)+'.config')+ApplicationName+'.ini';
 end;
 
-function GetAppUserFolder : Utf8String;
+function GetAppUserFolder : String;
 begin
   Result := IncludeTrailingPathDelimiter(GetUserDir)+ApplicationName;
 end;
 
-function GetApplicationVersion(FileName: Utf8String): Utf8String;
+function GetApplicationVersion(FileName: String): String;
 begin
   Result:=''; // TODO change
 end;

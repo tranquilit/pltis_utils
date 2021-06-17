@@ -187,7 +187,9 @@ const
 implementation
 
 uses
-  registry, LazFileUtils, LazUTF8, zipper, tiswinhttp, tislogging, gettext, uSMBIOS, blcksock
+  mormot.core.base,
+  registry, LazFileUtils, LazUTF8, zipper, tiswinhttp, tislogging, gettext, uSMBIOS,
+  mormot.net.sock
 {$IF defined(UNIX)}
   , baseunix, errors, sockets, unix,
   {$IFNDEF DARWIN}
@@ -214,25 +216,16 @@ end;
 
 function CheckOpenPort(IPAddress : String; Aport : Word; delay : integer = 1000):Boolean;
 var
-  Sock:TTCPBlockSocket;
+  Sock:TNetSocket;
 begin
   Result:=False;
-  Sock:=TTCPBlockSocket.create;
-  try
-    Sock.NonBlockMode:=true;
-    Sock.ConnectionTimeout := delay;
-    Sock.Connect(IPAddress,IntToStr(Aport));
-    if (Sock.LastError=0) and Sock.CanWrite(delay) then
-    begin
-      Sock.SendByte(0);
-      Result:=Sock.LastError=0;
-    end
-    else
-      Result := False;
-    Sock.CloseSocket;
-  finally
-    Sock.free;
-  end;
+  if NewSocket(IPAddress,IntToStr(Aport),nlTCP,False,delay,delay,delay,1,Sock) = nrOK then
+  Begin
+    Sock^.Close;
+    Result := True;
+  end
+  else
+    Result := False;
 end;
 
 {$IF defined(WINDOWS)}

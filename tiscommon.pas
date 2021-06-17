@@ -180,6 +180,8 @@ function GetCmdParams(ID:String;Default:String=''):String;
 
 procedure ResetMemory(out P; Size: Longint);
 
+function ExtractResourceString(Ident: String): RawByteString;
+
 const
   Language:String = '';
   LanguageFull:String = '';
@@ -641,6 +643,21 @@ begin
          Exit;
   end;
   Result:=0;
+end;
+
+
+function ExtractResourceString(Ident: String): RawByteString;
+var
+  S: TResourceStream;
+begin
+  S := TResourceStream.Create(HInstance, Ident, MAKEINTRESOURCE(10)); // RT_RCDATA
+  try
+    SetLength(Result,S.Size);
+    S.Seek(0,soFromBeginning);
+    S.Read(PChar(Result)^,S.Size);
+  finally
+    S.Free; // destroy the resource stream
+  end;
 end;
 
 

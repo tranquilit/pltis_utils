@@ -392,7 +392,7 @@ var
   bat: TextFile;
   tempdir,tempfn,updateBatch,zipfn,version : String;
   files:TStringList;
-  UnZipper: TUnZipper;
+  UnZipper: TZipRead;
   i,hinstance:integer;
 begin
   Files := TStringList.Create;
@@ -414,18 +414,15 @@ begin
       Files.Add(SetupExename);
     except
       //trying to get a zip file instead (exe files blocked by proxy ...)
-      zipfn:= AppendPathDelim(tempdir)+ChangeFileExt(SetupExename,ansistring('.zip'));
+      zipfn:= AppendPathDelim(tempdir)+ChangeFileExt(SetupExename,'.zip');
       wget(ChangeFileExt(fromURL,ansistring('.zip')),zipfn,Nil,Nil,True);
       Logger('  unzipping file '+zipfn);
-      UnZipper := TUnZipper.Create;
+      UnZipper := TZipRead.Create(zipfn);
       try
-        UnZipper.FileName := zipfn;
-        UnZipper.OutputPath := tempdir;
-        UnZipper.Examine;
-        UnZipper.UnZipAllFiles;
-        for i := 0 to UnZipper.Entries.count-1 do
-          if not UnZipper.Entries[i].IsDirectory then
-            Files.Add(StringReplace(UnZipper.Entries[i].DiskFileName,'/','\',[rfReplaceAll]));
+        UnZipper.UnZipAll(tempdir);
+        for i := 0 to Length(UnZipper.Entry) -1 do
+          if not UnZipper.Entry[i].dir^.IsFolder then
+            Files.Add(StringReplace(UnZipper.Entry[i].zipName ,'/','\',[rfReplaceAll]));
       finally
         UnZipper.Free;
       end;

@@ -131,11 +131,10 @@ function StopServiceByName(const AServer, AServiceName: AnsiString):Boolean;
 function ProgramFilesX86:String;
 
 {$ELSE}
-{$IFDEF UNIX}
+  {$IFDEF UNIX}
 function UserInGroup(Group :DWORD) : Boolean;
-
 function GetApplicationVersion(FileName:String=''): String;
-{$ENDIF}
+  {$ENDIF}
 {$ENDIF}
 
 procedure UnzipFile(ZipFilePath,OutputPath:String);
@@ -190,18 +189,27 @@ implementation
 
 uses
   mormot.core.base,
-  registry, LazFileUtils, LazUTF8, zipper, tiswinhttp, tislogging, gettext, uSMBIOS,
+  registry,
+  LazFileUtils,
+  LazUTF8,
+  {$ifdef windows}
+  tiswinhttp,
+  {$endif}
+  tislogging,
+  gettext,
+  uSMBIOS,
+  mormot.core.zip,
   mormot.net.sock
-{$IF defined(UNIX)}
+  {$IFDEF UNIX}
   , baseunix, errors, sockets, unix,
-  {$IFNDEF DARWIN}
-  cnetdb
-  {$ELSE}
+    {$IFDEF DARWIN}
   netdb
-  {$ENDIF}
-{$ELSEIF defined(WINDOWS)}
+    {$ELSE}
+  cnetdb
+    {$ENDIF}
+  {$ELSE IFDEF WINDOWS}
   , shlobj, winsock2
-{$ENDIF}
+  {$ENDIF}
   ;
 
 procedure Logger(Msg: String;level:LogLevel=WARNING);
@@ -251,14 +259,18 @@ end;
 
 procedure UnzipFile(ZipFilePath, OutputPath: String);
 var
-  UnZipper: TUnZipper;
+  UnZipper: TZipRead;
+  ErrorIdx: Integer;
+  FI: TFileInfoFull;
 begin
-  UnZipper := TUnZipper.Create;
+  UnZipper := TZipRead.Create(ZipFilePath);
   try
-    UnZipper.FileName := ZipFilePath;
-    UnZipper.OutputPath := OutputPath;
-    UnZipper.Examine;
-    UnZipper.UnZipAllFiles;
+    ErrorIdx := UnZipper.UnZipAll(OutputPath);
+    if ErrorIdx >= 0 then
+    begin
+      UnZipper.RetrieveFileInfo(ErrorIdx,FI);
+      Raise Exception.Create('Error extracting file from zip '+UnZipper.Entry[ErrorIdx].zipName);
+    end;
   finally
     UnZipper.Free;
   end;

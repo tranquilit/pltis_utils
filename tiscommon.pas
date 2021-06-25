@@ -131,10 +131,11 @@ function StopServiceByName(const AServer, AServiceName: AnsiString):Boolean;
 function ProgramFilesX86:String;
 
 {$ELSE}
-  {$IFDEF UNIX}
+{$IFDEF UNIX}
 function UserInGroup(Group :DWORD) : Boolean;
+
 function GetApplicationVersion(FileName:String=''): String;
-  {$ENDIF}
+{$ENDIF}
 {$ENDIF}
 
 procedure UnzipFile(ZipFilePath,OutputPath:String);
@@ -164,10 +165,6 @@ function SortableVersion(VersionString:String):String;
 // if member is not an int, compare as string.
 function CompareVersion(const v1,v2:String;MembersCount:Integer=-1):integer;
 
-// try to open a tcp connection to IPAdress on port APort.
-//  return True if connection is OK within delau msecs
-function CheckOpenPort(IPAddress : String; Aport : Word; delay : integer = 1000):Boolean;
-function GetFreeLocalPort( portStart : Word = 5000; portEnd : Word = 10000; delay : integer = 1000):Word;
 function GetIPFromHost(const Hostname: String): String;
 
 // Starts a process as shell with cmd command line. Returns stdout of process.
@@ -198,8 +195,7 @@ uses
   tislogging,
   gettext,
   uSMBIOS,
-  mormot.core.zip,
-  mormot.net.sock
+  mormot.core.zip
   {$IFDEF UNIX}
   , baseunix, errors, sockets, unix,
     {$IFDEF DARWIN}
@@ -222,20 +218,6 @@ begin
       if Assigned(loghook) then
         loghook(Msg);
   end;
-end;
-
-function CheckOpenPort(IPAddress : String; Aport : Word; delay : integer = 1000):Boolean;
-var
-  Sock:TNetSocket;
-begin
-  Result:=False;
-  if NewSocket(IPAddress,IntToStr(Aport),nlTCP,False,delay,delay,delay,1,Sock) = nrOK then
-  Begin
-    Sock^.Close;
-    Result := True;
-  end
-  else
-    Result := False;
 end;
 
 {$IF defined(WINDOWS)}
@@ -642,21 +624,6 @@ begin
   finally
   end;
 end;
-
-function GetFreeLocalPort( portStart : Word = 5000; portEnd : Word = 10000; delay : integer = 1000):Word;
-var
-  trycount  : integer;
-begin
-  trycount:=0;
-  while( trycount < (portEnd - portStart) ) do
-  begin
-      Result:=portStart+Random(portEnd-portStart);
-      if CheckOpenPort('127.0.0.1', Result, delay) then
-         Exit;
-  end;
-  Result:=0;
-end;
-
 
 function ExtractResourceString(Ident: String): RawByteString;
 var

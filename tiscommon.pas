@@ -368,7 +368,7 @@ function CompareVersion(const v1,v2:String;MembersCount:Integer=-1):integer;
 var
   version1,version2,pack1,pack2,tok1,tok2:String;
   I1,I2: Int64;
-  Error: Integer;
+  Error,Error1,Error2: Integer;
   MemberIdx:integer;
 
   function CompareInt(const i1,i2:Int64):integer; inline;
@@ -422,7 +422,10 @@ begin
   begin
     if (pack1<>'') or (pack2<>'') then
     try
-      result := CompareInt(StrToInt(pack1),StrToInt(pack2));
+      Val(pack1,I1,Error1);
+      Val(pack2,I2,Error2);
+      If (Error1=0) and (Error2=0) then
+        result := CompareInt(Error1,Error2);
     except
       result := CompareStr(pack1,pack2)
     end;

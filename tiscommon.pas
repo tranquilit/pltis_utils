@@ -425,7 +425,7 @@ begin
       Val(pack1,I1,Error1);
       Val(pack2,I2,Error2);
       If (Error1=0) and (Error2=0) then
-        result := CompareInt(Error1,Error2);
+        result := CompareInt(I1,I2);
     except
       result := CompareStr(pack1,pack2)
     end;

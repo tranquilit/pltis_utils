@@ -301,6 +301,7 @@ function StrArrayIntersect(const a1,a2:TStringArray):TStringArray;
 type
   TStringArrayHelper = type helper for TStringArray
     procedure Append(const a:String);
+    function Remove(const a: String; removeAll: Boolean=True): Boolean;
     function Intersect(const other:TStringArray):TStringArray;
     function Join(Sep: String): String;
     procedure Extend(const other:Array of String);
@@ -2553,6 +2554,39 @@ procedure TStringArrayHelper.Append(const a: String);
 begin
   SetLength(self,Length(Self)+1);
   Self[Length(Self)-1] := a;
+end;
+
+function TStringArrayHelper.Remove(const a: String; removeAll: Boolean): Boolean;
+var
+  i, initLength, ct: Integer;
+begin
+  initLength := Length(Self);
+  ct := 0;
+  i := 0;
+  while i < Length(Self) do
+  begin
+    if Self[i] = a then
+    begin
+      if not removeAll then
+      begin
+        Delete(Self, i, 1);
+        Exit(True);
+      end
+      else
+        Inc(ct);
+    end
+    else if ct <> 0 then
+    begin
+      Delete(Self, i - ct, ct);
+      Dec(i, ct);
+    end;
+  end;
+  if ct <> 0 then
+  begin
+    Delete(Self, i - ct, ct);
+    Dec(i, ct);
+  end;
+  Exit(Length(Self) <> initLength);
 end;
 
 function TStringArrayHelper.Intersect(const other:TStringArray):TStringArray;

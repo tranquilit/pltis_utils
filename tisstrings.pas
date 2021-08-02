@@ -300,7 +300,7 @@ function StrArrayIntersect(const a1,a2:TStringArray):TStringArray;
 { TStringArrayHelper }
 type
   TStringArrayHelper = type helper for TStringArray
-    function Append(const a: String; mustBeUnique: Boolean=False): Boolean;
+    function Append(const a: String; mustBeUnique: Boolean=False; blacklist: TStringArray=nil): Boolean;
     function Exist(const a: String): Boolean;
     function Remove(const a: String; removeAll: Boolean=True): Boolean;
     function Intersect(const other:TStringArray):TStringArray;
@@ -2551,11 +2551,10 @@ end;
 
 
 { TStringArrayHelper }
-function TStringArrayHelper.Append(const a: String; mustBeUnique: Boolean): Boolean;
-var
-  isUnique : Boolean;
+function TStringArrayHelper.Append(const a: String; mustBeUnique: Boolean;
+  blacklist: TStringArray): Boolean;
 begin
-  if mustBeUnique and Exist(a) then
+  if (mustBeUnique and Exist(a)) or ((Length(blacklist) > 0) and  blacklist.Exist(a)) then
     Exit(False);
   SetLength(self,Length(Self)+1);
   Self[Length(Self)-1] := a;
@@ -2566,7 +2565,7 @@ function TStringArrayHelper.Exist(const a: String): Boolean;
 var
   i: Integer;
 begin
-  for i := 0 to Length(Self) do
+  for i := 0 to Length(Self) - 1 do
     if Self[i] = a then
       Exit(True);
   Exit(False);

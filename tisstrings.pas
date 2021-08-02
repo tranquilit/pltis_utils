@@ -2579,13 +2579,12 @@ begin
     begin
       Delete(Self, i - ct, ct);
       Dec(i, ct);
+      ct := 0;
     end;
+    Inc(i);
   end;
-  if ct <> 0 then
-  begin
+  if ct > 0 then
     Delete(Self, i - ct, ct);
-    Dec(i, ct);
-  end;
   Exit(Length(Self) <> initLength);
 end;
 

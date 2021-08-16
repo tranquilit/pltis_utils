@@ -164,6 +164,9 @@ function SortableVersion(VersionString:String):String;
 // try to convert each version memebr into integer to compare
 // if member is not an int, compare as string.
 function CompareVersion(const v1,v2:String;MembersCount:Integer=-1):integer;
+// Test if a version is correct. A version must be formatted like this:
+// x-y where x is the software version (x.x...) and y the package version (integer)
+function IsVersionValid(const version: String;MembersCount:Integer=-1): Boolean;
 
 function GetIPFromHost(const Hostname: String): String;
 
@@ -364,6 +367,47 @@ begin
   until tok='';
 end;
 
+function IsVersionValid(const version: String;MembersCount:Integer): Boolean;
+var
+  versionPart,pack,tok:String;
+  I1: Int64;
+  Error: Integer;
+  MemberIdx:integer;
+begin
+  pack := version;
+  MemberIdx:=1;
+
+  versionPart := StrToken(pack,'-');
+  if (version = '') or (AnsiLastChar(versionPart)^ = '.') or (AnsiLastChar(version)^ = '-') then
+    Exit(False);
+  //version base (x part)
+  repeat
+    tok := StrToken(versionPart,'.');
+    if tok <> '' then
+    begin
+      Val(Tok, I1, Error);
+      if Error<>0 then
+        Exit(False);
+    end;
+    if (tok='') or ((MembersCount>0) and (MemberIdx>=MembersCount)) then
+      break;
+    inc(MemberIdx);
+  until (tok='');
+  if versionPart <> '' then
+    Exit(False);
+
+  // packaging (y part)
+  if pack <> '' then
+  try
+    Val(pack,I1,Error);
+    If (Error <> 0) or (I1 < 0) then
+      Exit(False);
+  except
+    Exit(False);
+  end;
+  Exit(True);
+end;
+
 function CompareVersion(const v1,v2:String;MembersCount:Integer=-1):integer;
 var
   version1,version2,pack1,pack2,tok1,tok2:String;
@@ -385,12 +429,12 @@ begin
 
   version1 := StrToken(pack1,'-');
   version2 := StrToken(pack2,'-');
+  MemberIdx:=1;
 
   //version base
   repeat
     tok1 := StrToken(version1,'.');
     tok2 := StrToken(version2,'.');
-    MemberIdx:=1;
 
     if (tok1<>'') or (tok2<>'') then
     begin

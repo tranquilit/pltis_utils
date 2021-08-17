@@ -166,7 +166,8 @@ function SortableVersion(VersionString:String):String;
 function CompareVersion(const v1,v2:String;MembersCount:Integer=-1):integer;
 // Test if a version is correct. A version must be formatted like this:
 // x-y where x is the software version (x.x...) and y the package version (integer)
-function IsVersionValid(const version: String;MembersCount:Integer=-1): Boolean;
+// If isPackage is false, the package version (-y) will be considered has an error
+function IsVersionValid(const version: String; isPackage : Boolean=True; MembersCount:Integer=-1): Boolean;
 
 function GetIPFromHost(const Hostname: String): String;
 
@@ -367,7 +368,8 @@ begin
   until tok='';
 end;
 
-function IsVersionValid(const version: String;MembersCount:Integer): Boolean;
+function IsVersionValid(const version: String; isPackage: Boolean;
+  MembersCount: Integer): Boolean;
 var
   versionPart,pack,tok:String;
   I1: Int64;
@@ -399,6 +401,8 @@ begin
   // packaging (y part)
   if pack <> '' then
   try
+    if not isPackage then
+      Exit(False);
     Val(pack,I1,Error);
     If (Error <> 0) or (I1 < 0) then
       Exit(False);
@@ -526,7 +530,7 @@ begin
   {$ENDIF}
 end;
 
-function GetWorkGroupName(): String;
+function GetWorkgroupName: String;
 var
   {$IF defined(UNIX)}
   FileLines: TStringList;
@@ -560,7 +564,7 @@ begin
   {$ENDIF}
 end;
 
-function GetDomainName(): String;
+function GetDomainName: String;
 var
   {$IF defined(UNIX)}
   Host: String;

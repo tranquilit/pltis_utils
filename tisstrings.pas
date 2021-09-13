@@ -287,7 +287,7 @@ function CharLower(const C: Char): Char; {$IFDEF SUPPORTS_INLINE} inline; {$ENDI
 function CharUpper(const C: Char): Char; {$IFDEF SUPPORTS_INLINE} inline; {$ENDIF}
 function CharToggleCase(const C: Char): Char;
 
-operator in(const a:string;const b:Array Of String):Boolean;inline;
+operator in(const a:string;const b:Array Of String):Boolean;
 
 function StrSplit(St: String; Sep: String;Trimmed:Boolean=False;MaxSplit:Integer=-1): TStringArray;
 function StrJoin(Sep: String; StrArray : TStringArray): String;
@@ -302,6 +302,7 @@ type
   TStringArrayHelper = type helper for TStringArray
     function First:String;
     function Last: String;
+    function ClearEmptyItems: TStringArray;
     function Append(const a: String; mustBeUnique: Boolean=False; blacklist: TStringArray=nil): Boolean;
     function Exist(const a: String): Boolean;
     function Remove(const a: String; removeAll: Boolean=True): Boolean;
@@ -323,10 +324,7 @@ begin
   Result := False;
   for i :=Low(b) to High(b) do
     if a = b[i] then
-    begin
-      Result := True;
-      Break;
-    end;
+      Exit(True)
 end;
 
 
@@ -2563,6 +2561,15 @@ begin
   if Length(Self) = 0 then
     Exit('');
   Exit(Self[Length(Self) - 1]);
+end;
+
+function TStringArrayHelper.ClearEmptyItems: TStringArray;
+var
+  i: Integer;
+begin
+  for i := Length(Self) - 1 downto 0 do
+    if Self[i] = '' then
+      Delete(Self, i, 1);
 end;
 
 { TStringArrayHelper }

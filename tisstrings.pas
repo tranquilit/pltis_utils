@@ -302,7 +302,7 @@ type
   TStringArrayHelper = type helper for TStringArray
     function First:String;
     function Last: String;
-    function ClearEmptyItems: TStringArray;
+    function ClearEmptyItems(EmptyItems: TStringArray=nil): TStringArray;
     function Append(const a: String; mustBeUnique: Boolean=False; blacklist: TStringArray=nil): Boolean;
     function Exist(const a: String): Boolean;
     function Remove(const a: String; removeAll: Boolean=True): Boolean;
@@ -2563,13 +2563,16 @@ begin
   Exit(Self[Length(Self) - 1]);
 end;
 
-function TStringArrayHelper.ClearEmptyItems: TStringArray;
+function TStringArrayHelper.ClearEmptyItems(EmptyItems: TStringArray): TStringArray;
 var
   i: Integer;
 begin
+  if not Assigned(EmptyItems) then
+    EmptyItems := [''];
   for i := Length(Self) - 1 downto 0 do
-    if Self[i] = '' then
+    if Self[i] in EmptyItems then
       Delete(Self, i, 1);
+  Result := Self;
 end;
 
 { TStringArrayHelper }

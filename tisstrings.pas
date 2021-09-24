@@ -158,6 +158,7 @@ function StrNPos(const S, SubStr: string; N: SizeInt): SizeInt;
 function StrPrefixIndex(const S: string; const Prefixes: array of string): SizeInt;
 function StrSearch(const Substr, S: string; const Index: SizeInt = 1): SizeInt;
 function StrSuffixIndex(const S: string; const Suffixes: array of string): SizeInt;
+function StrCapitalize(const S: String): String;
 
 // add a string to a list
 procedure StrAppend(var AList: TStringArray;const S: string);
@@ -965,6 +966,13 @@ begin
       Break;
     end;
   end;
+end;
+
+function StrCapitalize(const S: String): String;
+begin
+  Result := S;
+  if Result <> '' then
+    Result[1] := UpCase(Result[1]);
 end;
 
 

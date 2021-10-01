@@ -177,6 +177,7 @@ function RunTask(cmd: String;out ExitStatus:integer;WorkingDir:String='';ShowWin
 // Get a command line argument with either /id=value  -id=value or --id=value
 // if ID is not found in command line, returns Default
 function GetCmdParams(ID:String;Default:String=''):String;
+function GetCmdParamsEx(LongName:String;ShortName:String='';DefaultValue:String=''):String; overload;
 
 procedure ResetMemory(out P; Size: Longint);
 
@@ -646,6 +647,49 @@ begin
     end;
   if not Found then
     Result:=Default;
+end;
+
+function GetCmdParamsEx(LongName:String;ShortName:String='';DefaultValue:String=''):String;
+var
+  i: integer;
+  S: String;
+  found, NextIsValue: Boolean;
+begin
+  Result:='';
+  Found:=False;
+  NextIsValue := False;
+  i := 1;
+
+  while (i <= ParamCount) and not Found do
+  begin
+    S:=ParamStrUTF8(i);
+    if NextIsValue then
+    begin
+      Found := True;
+      Result := S;
+      Break;
+    end;
+
+    if
+        (UTF8CompareStr(Copy(S, 1, Length(LongName)+2), '/'+LongName+'=') = 0) or
+        (UTF8CompareStr(Copy(S, 1, Length(LongName)+3), '--'+LongName+'=') = 0) then
+    begin
+      found := True;
+      NextIsValue := False;
+      Result:=Copy(S,pos('=',S)+1,MaxInt);
+      Break;
+    end;
+
+    if
+        (UTF8CompareStr(Copy(S, 1, Length(ShortName)+2), '/'+ShortName) = 0) or
+        (UTF8CompareStr(Copy(S, 1, Length(ShortName)+3), '-'+ShortName) = 0) then
+      NextIsValue := True;
+
+    inc(i);
+  end;
+
+  if not Found then
+    Result:=DefaultValue;
 end;
 
 function RunTask(cmd: String;out ExitStatus:integer;WorkingDir:String='';ShowWindow:TShowWindowOptions=swoHIDE): String;

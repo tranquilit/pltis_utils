@@ -655,8 +655,8 @@ var
   S: String;
   found, NextIsValue: Boolean;
 begin
-  Result:='';
-  Found:=False;
+  Result := DefaultValue;
+  Found := False;
   NextIsValue := False;
   i := 1;
 
@@ -676,20 +676,25 @@ begin
     begin
       found := True;
       NextIsValue := False;
-      Result:=Copy(S,pos('=',S)+1,MaxInt);
-      Break;
     end;
 
     if
-        (UTF8CompareStr(Copy(S, 1, Length(ShortName)+2), '/'+ShortName) = 0) or
-        (UTF8CompareStr(Copy(S, 1, Length(ShortName)+3), '-'+ShortName) = 0) then
-      NextIsValue := True;
+        (UTF8CompareStr(Copy(S, 1, 2), '/'+ShortName) = 0) or
+        (UTF8CompareStr(Copy(S, 1, 2), '-'+ShortName) = 0) then
+    begin
+      if length(S)>2 then
+      // short form like -ldebug
+      begin
+        Result:=Copy(S,3,MaxInt);
+        found := True;
+        Break;
+      end
+      else
+        NextIsValue := True;
+    end;
 
     inc(i);
   end;
-
-  if not Found then
-    Result:=DefaultValue;
 end;
 
 function RunTask(cmd: String;out ExitStatus:integer;WorkingDir:String='';ShowWindow:TShowWindowOptions=swoHIDE): String;

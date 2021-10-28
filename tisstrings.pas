@@ -307,6 +307,7 @@ type
     function Append(const a: String; mustBeUnique: Boolean=False; blacklist: TStringArray=nil): Boolean;
     function Exist(const a: String): Boolean;
     function Remove(const a: String; removeAll: Boolean=True): Boolean;
+    procedure Remove(const other: Array of String);
     function Intersect(const other:TStringArray):TStringArray;
     function Join(Sep: String): String;
     procedure Extend(const other:Array of String);
@@ -2634,6 +2635,14 @@ begin
   if ct > 0 then
     Delete(Self, i - ct, ct);
   Exit(Length(Self) <> initLength);
+end;
+
+procedure TStringArrayHelper.Remove(const other: array of String);
+var
+  Item: String;
+begin
+  for Item in other do
+    Self.Remove(Item);
 end;
 
 function TStringArrayHelper.Intersect(const other:TStringArray):TStringArray;

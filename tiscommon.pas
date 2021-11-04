@@ -626,25 +626,25 @@ end;
 
 function GetCmdParams(ID:String;Default:String=''):String;
 var
-    i:integer;
-    S:String;
+  i:integer;
+  S:String;
   found:Boolean;
 begin
-    Result:='';
+  Result:='';
   found:=False;
-    for i:=1 to ParamCount do
-    begin
-        S:=ParamStrUTF8(i);
-        if
-            (UTF8CompareStr(Copy(S, 1, Length(ID)+2), '/'+ID+'=') = 0) or
-            (UTF8CompareStr(Copy(S, 1, Length(ID)+2), '-'+ID+'=') = 0) or
-            (UTF8CompareStr(Copy(S, 1, Length(ID)+3), '--'+ID+'=') = 0) then
-        begin
-            found:=True;
-            Result:=Copy(S,pos('=',S)+1,MaxInt);
-            Break;
-        end;
-    end;
+  for i:=1 to ParamCount do
+  begin
+      S:=ParamStrUTF8(i);
+      if
+          (UTF8CompareStr(Copy(S, 1, Length(ID)+2), '/'+ID+'=') = 0) or
+          (UTF8CompareStr(Copy(S, 1, Length(ID)+2), '-'+ID+'=') = 0) or
+          (UTF8CompareStr(Copy(S, 1, Length(ID)+3), '--'+ID+'=') = 0) then
+      begin
+          found:=True;
+          Result:=Copy(S,pos('=',S)+1,MaxInt);
+          Break;
+      end;
+  end;
   if not Found then
     Result:=Default;
 end;

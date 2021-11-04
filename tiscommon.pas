@@ -640,7 +640,7 @@ begin
             (UTF8CompareStr(Copy(S, 1, Length(ID)+2), '-'+ID+'=') = 0) or
             (UTF8CompareStr(Copy(S, 1, Length(ID)+3), '--'+ID+'=') = 0) then
         begin
-      found:=True;
+            found:=True;
             Result:=Copy(S,pos('=',S)+1,MaxInt);
             Break;
         end;
@@ -676,6 +676,9 @@ begin
     begin
       found := True;
       NextIsValue := False;
+      Result:=Copy(S,pos('=',S)+1,MaxInt);
+      found := True;
+      Break;
     end;
 
     if

@@ -670,31 +670,33 @@ begin
       Break;
     end;
 
-    if
-        (UTF8CompareStr(Copy(S, 1, Length(LongName)+2), '/'+LongName+'=') = 0) or
-        (UTF8CompareStr(Copy(S, 1, Length(LongName)+3), '--'+LongName+'=') = 0) then
-    begin
-      found := True;
-      NextIsValue := False;
-      Result:=Copy(S,pos('=',S)+1,MaxInt);
-      found := True;
-      Break;
-    end;
-
-    if
-        (UTF8CompareStr(Copy(S, 1, 2), '/'+ShortName) = 0) or
-        (UTF8CompareStr(Copy(S, 1, 2), '-'+ShortName) = 0) then
-    begin
-      if length(S)>2 then
-      // short form like -ldebug
+    if longname<>'' then
+      if
+          (UTF8CompareStr(Copy(S, 1, Length(LongName)+2), '/'+LongName+'=') = 0) or
+          (UTF8CompareStr(Copy(S, 1, Length(LongName)+3), '--'+LongName+'=') = 0) then
       begin
-        Result:=Copy(S,3,MaxInt);
+        found := True;
+        NextIsValue := False;
+        Result:=Copy(S,pos('=',S)+1,MaxInt);
         found := True;
         Break;
-      end
-      else
-        NextIsValue := True;
-    end;
+      end;
+
+    if shortname<>'' then
+      if
+          (UTF8CompareStr(Copy(S, 1, 2), '/'+ShortName) = 0) or
+          (UTF8CompareStr(Copy(S, 1, 2), '-'+ShortName) = 0) then
+      begin
+        if length(S)>2 then
+        // short form like -ldebug
+        begin
+          Result:=Copy(S,3,MaxInt);
+          found := True;
+          Break;
+        end
+        else
+          NextIsValue := True;
+      end;
 
     inc(i);
   end;

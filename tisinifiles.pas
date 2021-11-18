@@ -35,7 +35,17 @@ unit tisinifiles;
 interface
 
 uses
-  SysUtils, Classes, IniFiles;
+  SysUtils, Classes, IniFiles, tisstrings ;
+
+type
+
+  { TTisInifiles }
+
+  TTisInifiles = class(TIniFile)
+  public
+    function ReadBool(const Section, Ident: string; Default: Boolean): Boolean; override;
+
+  end;
 
 // Initialization (ini) Files
 function IniReadBool(const FileName, Section, Line: string;Default:Boolean=False): Boolean;              // John C Molyneux
@@ -49,18 +59,13 @@ procedure IniDeleteKey(const FileName, Section, Line: string);
 
 function IniHasKey(const FileName, Section, Line: string):Boolean;
 
-// Initialization (ini) Files helper routines
-procedure IniReadStrings(IniFile: TCustomIniFile; const Section: string; Strings: TStrings);
-procedure IniWriteStrings(IniFile: TCustomIniFile; const Section: string; Strings: TStrings);
-
-
 implementation
 
 procedure IniDeleteKey(const FileName, Section, Line: string);
 var
-  Ini: TIniFile;
+  Ini: TTisInifiles;
 begin
-  Ini := TIniFile.Create(FileName);
+  Ini := TTisInifiles.Create(FileName);
   try
     Ini.DeleteKey(Section, Line);
   finally
@@ -72,9 +77,9 @@ end;
 function IniReadBool(const FileName, Section, Line: string; Default: Boolean
   ): Boolean;
 var
-  Ini: TIniFile;
+  Ini: TTisInifiles;
 begin
-  Ini := TIniFile.Create(FileName);
+  Ini := TTisInifiles.Create(FileName);
   try
     Result := Ini.ReadBool(Section, Line, Default);
   finally
@@ -85,9 +90,9 @@ end;
 function IniReadInteger(const FileName, Section, Line: string; Default: Integer
   ): Integer;
 var
-  Ini: TIniFile;
+  Ini: TTisInifiles;
 begin
-  Ini := TIniFile.Create(FileName);
+  Ini := TTisInifiles.Create(FileName);
   try
     Result := Ini.ReadInteger(Section, Line, Default);
   finally
@@ -98,9 +103,9 @@ end;
 function IniReadString(const FileName, Section, Line: string; Default: String
   ): string;
 var
-  Ini: TIniFile;
+  Ini: TTisInifiles;
 begin
-  Ini := TIniFile.Create(FileName);
+  Ini := TTisInifiles.Create(FileName);
   try
     Result := Ini.ReadString(Section, Line, Default);
   finally
@@ -110,9 +115,9 @@ end;
 
 procedure IniWriteBool(const FileName, Section, Line: string; Value: Boolean);
 var
-  Ini: TIniFile;
+  Ini: TTisInifiles;
 begin
-  Ini := TIniFile.Create(FileName);
+  Ini := TTisInifiles.Create(FileName);
   try
     Ini.WriteBool(Section, Line, Value);
   finally
@@ -122,9 +127,9 @@ end;
 
 procedure IniWriteInteger(const FileName, Section, Line: string; Value: Integer);
 var
-  Ini: TIniFile;
+  Ini: TTisInifiles;
 begin
-  Ini := TIniFile.Create(FileName);
+  Ini := TTisInifiles.Create(FileName);
   try
     Ini.WriteInteger(Section, Line, Value);
   finally
@@ -134,9 +139,9 @@ end;
 
 procedure IniWriteString(const FileName, Section, Line, Value: string);
 var
-  Ini: TIniFile;
+  Ini: TTisInifiles;
 begin
-  Ini := TIniFile.Create(FileName);
+  Ini := TTisInifiles.Create(FileName);
   try
     Ini.WriteString(Section, Line, Value);
   finally
@@ -150,9 +155,9 @@ const
 
 function IniHasKey(const FileName, Section, Line: string): Boolean;
 var
-  Ini: TIniFile;
+  Ini: TTisInifiles;
 begin
-  Ini := TIniFile.Create(FileName);
+  Ini := TTisInifiles.Create(FileName);
   try
     Result := Ini.ValueExists(Section,Line);
   finally
@@ -160,35 +165,24 @@ begin
   end;
 end;
 
-procedure IniReadStrings(IniFile: TCustomIniFile; const Section: string; Strings: TStrings);
-var
-  Count, I: Integer;
-begin
-  with IniFile do
-  begin
-    Strings.BeginUpdate;
-    try
-      Strings.Clear;
-      Count := ReadInteger(Section, ItemCountName, 0);
-      for I := 0 to Count - 1 do
-        Strings.Add(ReadString(Section, IntToStr(I), ''));
-    finally
-      Strings.EndUpdate;
-    end;
-  end;
-end;
+{ TTisInifiles }
 
-procedure IniWriteStrings(IniFile: TCustomIniFile; const Section: string; Strings: TStrings);
+function TTisInifiles.ReadBool(const Section, Ident: string; Default: Boolean
+  ): Boolean;
+const
+  BoolTrueValues: array [0..3] of String = ('true', '1', 'yes', 'on');
+  BoolFalseValues: array [0..3] of String = ('false', '0', 'no', 'off');
 var
-  I: Integer;
+  s: String;
 begin
-  with IniFile do
-  begin
-    EraseSection(Section);
-    WriteInteger(Section, ItemCountName, Strings.Count);
-    for I := 0 to Strings.Count - 1 do
-      WriteString(Section, IntToStr(I), Strings[I]);
-  end;
+  Result := Default;
+  s:= ReadString(Section, Ident, '').ToLower;
+  if s = '' then
+    Exit;
+  if TStringArray(BoolTrueValues).Exist(S) then
+    Result:=True
+  else if TStringArray(BoolFalseValues).Exist(S) then
+    Result:=False;
 end;
 
 end.

@@ -587,7 +587,7 @@ begin
 end;
 
 // to store use specific settings for this application
-function Appuserinipath:String;
+function AppUserIniPath: String;
 var
   dir : String;
 begin
@@ -798,7 +798,7 @@ begin
 end;
 
 
-function GetIPFromHost(const HostName: ansistring): ansistring;
+function GetIPFromHost(const Hostname: String): String;
 begin
   Result := GetIPFromHostWindows(Hostname);
 end;
@@ -982,7 +982,7 @@ begin
   {$H+}
 end;
 
-function OnSystemAccount(): Boolean;
+function OnSystemAccount: Boolean;
 begin
   Result := GetCurrentUserSid='S-1-5-18';
 end;
@@ -1154,7 +1154,7 @@ begin
   end;
 end;
 
-procedure SetUserProfilePath(SID:AnsiString;ImagePath:AnsiString);
+procedure SetUserProfilePath(SID: String; ImagePath: String);
 var
   r: TRegistry;
 begin

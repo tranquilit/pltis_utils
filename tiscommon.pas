@@ -183,6 +183,9 @@ procedure ResetMemory(out P; Size: Longint);
 
 function ExtractResourceString(Ident: String): RawByteString;
 
+function FindFiles(RootDir: String; Pattern: String='*'; PrependRootdir: Boolean=True; Subfolders: Boolean=False;
+    Flags: Integer = faNormal): TStringArray;
+
 const
   Language:String = '';
   LanguageFull:String = '';
@@ -744,6 +747,40 @@ begin
   end;
 end;
 
+function FindFiles(RootDir: String; Pattern: String; PrependRootdir: Boolean;
+  Subfolders: Boolean; Flags: Integer): TStringArray;
+var
+  Search: TRawByteSearchRec;
+  Path: String;
+begin
+  Result := nil;
+  Path := IncludeTrailingPathDelimiter(RootDir);
+  if SysUtils.FindFirst(Path+Pattern, Flags, Search) = 0 then
+  try
+    repeat
+      if (Search.Name = '.') or (Search.Name = '..') then
+        continue;
+      if (Search.Attr and Flags) <> 0 then
+        if PrependRootdir then
+          Result.Append(IncludeTrailingPathDelimiter(RootDir)+Search.Name)
+        else
+          Result.Append(Search.Name);
+    until SysUtils.FindNext(Search) <> 0;
+  finally
+    SysUtils.FindClose(Search);
+  end;
+
+  if Subfolders and (SysUtils.FindFirst(Path+'*', faDirectory, Search) = 0) then
+  try
+    repeat
+      if (Search.Name = '.') or (Search.Name = '..') then
+        continue;
+      Result.Extend(FindFiles(Path+Search.Name, Pattern, PrependRootdir, True, Flags));
+    until SysUtils.FindNext(Search) <> 0;
+  finally
+    SysUtils.FindClose(Search);
+  end;
+end;
 
 initialization
   GetLanguageIDs(LanguageFull,Language);

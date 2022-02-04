@@ -147,6 +147,7 @@ function GetBIOSVersion: String;
 function GetBIOSDate: String;
 function GetBIOSUUID: String;
 function GetSystemSerialNumber: String;
+function GetSystemAssetTag: String;
 
 function GetComputerName : String;
 function GetUserName : String;
@@ -320,6 +321,24 @@ begin
   SMBios:=TSMBios.Create;
   try
     Result := SMBios.SysInfo.SerialNumberStr;
+  finally
+    SMBios.Free;
+  end;
+end;
+
+function GetSystemAssetTag: String;
+var
+  SMBios : TSMBios;
+  board: TBaseBoardInformation;
+begin
+  SMBios:=TSMBios.Create;
+  try
+    Result :='';
+    for board in SMBios.BaseBoardInfo do
+    begin
+      Result := board.AssetTagStr;
+      break;
+    end;
   finally
     SMBios.Free;
   end;

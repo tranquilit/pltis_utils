@@ -145,6 +145,8 @@ function GetSystemManufacturer: String;
 function GetBIOSVendor: String;
 function GetBIOSVersion: String;
 function GetBIOSDate: String;
+function GetBIOSUUID: String;
+function GetSystemSerialNumber: String;
 
 function GetComputerName : String;
 function GetUserName : String;
@@ -194,6 +196,7 @@ implementation
 
 uses
   mormot.core.base,
+  mormot.core.text,
   registry,
   LazFileUtils,
   LazUTF8,
@@ -295,18 +298,41 @@ begin
   end;
 end;
 
-function GetSystemProductName: String;
+function GetBIOSUUID: String;
 var
   SMBios : TSMBios;
-  LBaseBoard : TBaseBoardInformation;
+  LBaseBoard : TSysInfo;
+  aguidarray: array [0 .. 15] of Byte;
+  aguid: TGUID absolute aguidarray;
 begin
   SMBios:=TSMBios.Create;
   try
-     if SMBios.HasBaseBoardInfo then
-        for LBaseBoard in SMBios.BaseBoardInfo do
-          Result:=LBaseBoard.ProductStr
-      else
-          Result:='No Base Board Info was found';
+    aguidarray := SMBios.SysInfo.RAWSystemInformation^.UUID;
+    Result := ToUtf8(aguid);
+  finally
+    SMBios.Free;
+  end;
+end;
+
+function GetSystemSerialNumber: String;
+var
+  SMBios : TSMBios;
+begin
+  SMBios:=TSMBios.Create;
+  try
+    Result := SMBios.SysInfo.SerialNumberStr;
+  finally
+    SMBios.Free;
+  end;
+end;
+
+function GetSystemProductName: String;
+var
+  SMBios : TSMBios;
+begin
+  SMBios:=TSMBios.Create;
+  try
+    Result := SMBios.SysInfo.ProductNameStr;
   finally
     SMBios.Free;
   end;
@@ -315,18 +341,10 @@ end;
 function GetSystemManufacturer: String;
 var
   SMBios : TSMBios;
-  LBaseBoard : TBaseBoardInformation;
 begin
   SMBios:=TSMBios.Create;
   try
-     if SMBios.HasBaseBoardInfo
-      then
-        for LBaseBoard in SMBios.BaseBoardInfo do
-        begin
-          Result:=LBaseBoard.ManufacturerStr;
-        end
-      else
-          Result:= 'No Base Board Info was found'
+    Result := SMBios.SysInfo.ManufacturerStr;
   finally
     SMBios.Free;
   end;

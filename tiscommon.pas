@@ -301,7 +301,6 @@ end;
 function GetBIOSUUID: String;
 var
   SMBios : TSMBios;
-  LBaseBoard : TSysInfo;
   aguidarray: array [0 .. 15] of Byte;
   aguid: TGUID absolute aguidarray;
 begin

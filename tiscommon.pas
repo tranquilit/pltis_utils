@@ -124,6 +124,8 @@ function IsAdminLoggedOn: Boolean;
 function ProcessExists(ExeFileName: string): boolean;
 function KillTask(ExeFileName: string): integer;
 
+function Impersonate(const Username, Password, Domain: string): Boolean;
+
 function GetServiceStatusByName(const AServer,AServiceName:ansistring):TServiceState;
 function StartServiceByName(const AServer,AServiceName: AnsiString):Boolean;
 function StopServiceByName(const AServer, AServiceName: AnsiString):Boolean;

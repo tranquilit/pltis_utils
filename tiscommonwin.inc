@@ -1191,3 +1191,12 @@ begin
     result := SysUtils.GetEnvironmentVariable('PROGRAMFILES')
 end;
 
+function Impersonate(const Username, Password, Domain: string): Boolean;
+var
+  TokenHandle       : THandle;
+begin
+  TokenHandle := UserLogin(Username,Password,Domain);
+  Result := ImpersonateLoggedOnUser(TokenHandle);
+end;
+
+

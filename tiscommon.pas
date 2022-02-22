@@ -798,11 +798,10 @@ begin
     repeat
       if (Search.Name = '.') or (Search.Name = '..') then
         continue;
-      if (Search.Attr and Flags) <> 0 then
-        if PrependRootdir then
-          Result.Append(IncludeTrailingPathDelimiter(RootDir)+Search.Name)
-        else
-          Result.Append(Search.Name);
+      if PrependRootdir then
+        Result.Append(IncludeTrailingPathDelimiter(RootDir)+Search.Name)
+      else
+        Result.Append(Search.Name);
     until SysUtils.FindNext(Search) <> 0;
   finally
     SysUtils.FindClose(Search);
@@ -813,7 +812,8 @@ begin
     repeat
       if (Search.Name = '.') or (Search.Name = '..') then
         continue;
-      Result.Extend(FindFiles(Path+Search.Name, Pattern, PrependRootdir, True, Flags));
+      if (Search.Attr and faDirectory) <> 0 then
+        Result.Extend(FindFiles(Path+Search.Name, Pattern, PrependRootdir, True, Flags));
     until SysUtils.FindNext(Search) <> 0;
   finally
     SysUtils.FindClose(Search);

@@ -183,6 +183,7 @@ function RunTask(cmd: String;out ExitStatus:integer;WorkingDir:String='';ShowWin
 // if ID is not found in command line, returns Default
 function GetCmdParams(ID:String;Default:String=''):String;
 function GetCmdParamsEx(LongName:String;ShortName:String='';DefaultValue:String=''):String; overload;
+function GetCmdArgs(ParamsWithArg: Array Of String): TStringArray;
 
 procedure ResetMemory(out P; Size: Longint);
 
@@ -740,6 +741,61 @@ begin
       end;
 
     inc(i);
+  end;
+end;
+
+function GetCmdArgs(ParamsWithArg: Array Of String): TStringArray;
+var
+  i: integer;
+  ParamName,ParamValue,S: String;
+  NextIsValue: Boolean;
+begin
+  Setlength(Result,0);
+  NextIsValue := False;
+  i := 0;
+  ParamName := '';
+  ParamValue := '';
+
+  while (i < ParamCount) do
+  begin
+    inc(i);
+    S:=ParamStrUTF8(i);
+
+    if NextIsValue and not (ParamName in ParamsWithArg)  then
+    begin
+      Result.Append(S);
+      Continue;
+    end;
+
+    if (Pos('--',S)=1) and (pos('=',S)>1) and (pos('"',S)>pos('=',S)) then // if there is --option="value 1" but not --verbose "value=test"
+    begin
+      NextIsValue := False;
+      ParamName := Copy(S,3,pos('=',S)-3);
+      ParamValue := Copy(S,pos('=',S)+1,MaxInt);
+      // we skip this key=value in result
+      Continue
+    end;
+
+    if (Pos('--',S)=1) then
+      Continue; // switch
+
+    if (Length(S) >= 2) and (S[1] = '-') and (S[2] <> '-') then
+    begin
+      ParamName := S[2];
+      if length(S)>2 then
+      // short form like -ldebug
+      begin
+        ParamValue := Copy(S,3,MaxInt);
+        Continue
+      end
+      else if (ParamName in ParamsWithArg) then
+        NextIsValue := True;
+      //else
+      //  next item will be appended in result Args
+    end;
+
+    // else we append
+    Result.Append(S);
   end;
 end;
 

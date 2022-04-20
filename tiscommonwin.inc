@@ -1199,4 +1199,211 @@ begin
   Result := ImpersonateLoggedOnUser(TokenHandle);
 end;
 
+function GetComputerNameExString(ANameFormat: COMPUTER_NAME_FORMAT): WideString;
+var
+  nSize: DWORD;
+begin
+  nSize := 1024;
+  SetLength(Result, nSize);
+  if GetComputerNameExW(ANameFormat, PWideChar(Result), nSize) then
+    SetLength(Result, nSize)
+  else
+    Result := '';
+end;
 
+procedure SetComputerNameEx(newname:WideString;ANameFormat: COMPUTER_NAME_FORMAT );
+begin
+  if not SetComputerNameExW(ANameFormat, PWideChar(newname)) then
+    Raise Exception.Create('Unable to set new hostnameEx');
+end;
+
+procedure SetComputerName(newname:WideString);
+begin
+  if not SetComputerNameW(PWideChar(newname)) then
+    Raise Exception.Create('Unable to set new hostname');
+end;
+
+
+(*
+ * Procedure  : AddUser
+ * Author     : MPu
+ * Adds a local account
+ *)
+function AddUser(const Server, User, Password: WideString): NET_API_STATUS;
+const
+  DOMAIN_GROUP_RID_USERS = $00000201;
+var
+  ui3               : TUserInfo3;
+  NetError          : DWORD;
+begin
+//  ui3 := nil;
+  NetError := 0;
+  if User <> '' then
+  begin
+    ZeroMemory(@ui3, sizeof(TUserInfo3));
+    ui3.usri3_name := PWideChar(User);
+    ui3.usri3_password := PWideChar(Password);
+    ui3.usri3_primary_group_id := DOMAIN_GROUP_RID_USERS;
+    NetError := NetUserAdd(PWideChar(Server), 3, @ui3, nil);
+  end;
+  result := NetError;
+end;
+
+(*
+ * Procedure  : DelUser
+ * Author     : MPu
+ * Deletes a local account
+ *)
+function DelUser(const Server, User: WideString): NET_API_STATUS;
+var
+  NetError          : DWORD;
+begin
+  NetError := 0;
+  if (User <> '') then
+  begin
+    NetError := NetUserDel(PWideChar(Server), PWideChar(User));
+  end;
+  result := NetError;
+end;
+
+(*
+ * Procedure  : RemoveFromGroup
+ * Author     : MPu
+ * Removes a local account from a local group
+ *)
+function RemoveFromGroup(const Server, User, Group: WideString): NET_API_STATUS;
+var
+  Member            : TLocalGroupMembersInfo3;
+  NetError          : DWORD;
+begin
+  NetError := 0;
+  if (User <> '') and (Group <> '') then
+  begin
+    try
+      //Member^.lgrmi3_domainandname := PWideChar(copy(Server, 3, length(Server)) + '\' + User);
+      Member.lgrmi3_domainandname := PWideChar(User);
+      NetError := NetLocalGroupDelMembers(PWideChar(Server), PWideChar(Group), 3, @Member, 1);
+    finally
+    end;
+  end;
+  result := NetError;
+end;
+
+
+
+procedure AddToUserPath(APath:Utf8String);
+var
+  SystemPath : Utf8String;
+begin
+  with TRegistry.Create do
+  try
+    //RootKey:=HKEY_LOCAL_MACHINE;
+    OpenKey('Environment',False);
+    SystemPath:=ReadString('PATH');
+    if pos(LowerCase(APath),LowerCase(SystemPath))=0 then
+    begin
+      if RightStr(SystemPath,1)<>';' then SystemPath:=SystemPath+';';
+      SystemPath:=SystemPath+APath;
+      if RightStr(SystemPath,1)<>';' then SystemPath:=SystemPath+';';
+      WriteString('PATH',SystemPath);
+    end;
+  finally
+    Free;
+  end;
+end;
+
+procedure AddToSystemPathWindows(APath:Utf8String);
+var
+  SystemPath : Utf8String;
+  aresult:PtrUInt;
+begin
+  with TRegistry.Create do
+  try
+    RootKey:=HKEY_LOCAL_MACHINE;
+    OpenKey('SYSTEM\CurrentControlSet\Control\Session Manager\Environment',False);
+    SystemPath:=ReadString('Path');
+    if pos(LowerCase(APath),LowerCase(SystemPath))=0 then
+    begin
+      if RightStr(SystemPath,1)<>';' then SystemPath:=SystemPath+';';
+      SystemPath:=SystemPath+APath;
+      if RightStr(SystemPath,1)<>';' then SystemPath:=SystemPath+';';
+      WriteExpandString('Path',SystemPath);
+      SendMessageTimeout(HWND_BROADCAST,WM_SETTINGCHANGE,0,Longint(PAnsiChar('Environment')),0,1000,aresult);
+    end;
+  finally
+    Free;
+  end;
+end;
+
+function ComputerDescription: String;
+var
+  reg: TRegistry;
+begin
+  reg := TRegistry.Create;
+  try
+    reg.RootKey:=HKEY_LOCAL_MACHINE;
+    if reg.OpenKeyReadOnly('System\CurrentControlSet\Services\lanmanserver\parameters') then
+      Result := Utf8Encode(reg.ReadString('srvcomment'))
+    else
+      Result :='';
+  finally
+    reg.Free;
+  end;
+end;
+
+procedure SetComputerDescription(desc: String);
+var
+  reg : TRegistry;
+begin
+  reg := TRegistry.Create;
+  try
+    reg.RootKey:=HKEY_LOCAL_MACHINE;
+    if reg.OpenKey('System\CurrentControlSet\Services\lanmanserver\parameters',False) then
+      reg.WriteString('srvcomment',Utf8Decode(desc))
+  finally
+    reg.Free;
+  end;
+end;
+
+
+procedure SetNewComputerNameRegistry(NewName:String);
+var
+  r:TRegistry;
+begin
+  r := TRegistry.Create();
+  try
+    if r.OpenKey('SYSTEM\CurrentControlSet\Services\Tcpip\Parameters',False) then
+    begin
+      r.DeleteValue ('Hostname');
+      r.DeleteValue ('NV Hostname');
+      r.CloseKey;
+    end;
+
+    r.RootKey:=HKEY_LOCAL_MACHINE;
+    if r.OpenKey('SYSTEM\CurrentControlSet\Control\ComputerName\ActiveComputerName',False) then
+    begin
+      r.WriteString('ComputerName',newname);
+      r.CloseKey;
+    end;
+    if r.OpenKey('SYSTEM\CurrentControlSet\Control\ComputerName\ComputerName',False) then
+    begin
+      r.WriteString('ComputerName',newname);
+      r.CloseKey;
+    end;
+
+    if r.OpenKey('SYSTEM\CurrentControlSet\Services\Tcpip\Parameters',False) then
+    begin
+      r.WriteString('Hostname',newname);
+      r.WriteString('NV Hostname',newname);
+      r.CloseKey;
+    end;
+    if r.OpenKey('SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon',False) then
+    begin
+      r.WriteString('AltDefaultDomainName',newname);
+      r.WriteString('DefaultDomainName',newname);
+      r.CloseKey;
+    end;
+  finally
+    r.Free;
+  end;
+end;

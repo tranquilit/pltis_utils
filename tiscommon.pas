@@ -32,7 +32,22 @@ uses
 
 {$IFDEF WINDOWS}
 procedure UpdateApplication(fromURL:String;SetupExename,SetupParams,ExeName,RestartParam:String);
+function GetComputerNameExString(ANameFormat: COMPUTER_NAME_FORMAT): WideString;
+procedure SetComputerName(newname:WideString);
+procedure SetComputerNameEx(newname:WideString;ANameFormat: COMPUTER_NAME_FORMAT );
+procedure SetNewComputerNameRegistry(NewName:String);
+
 function UserInGroup(Group :DWORD) : Boolean;
+function AddUser(const Server, User, Password: WideString): NET_API_STATUS;
+function DelUser(const Server, User: WideString): NET_API_STATUS;
+function RemoveFromGroup(const Server, User, Group: WideString): NET_API_STATUS;
+procedure SetComputerDescription(desc: String);
+function ComputerDescription: String;
+
+Function Wow64DisableWow64FsRedirection(Var Wow64FsEnableRedirection: LongBool): LongBool; StdCall;
+  External 'Kernel32.dll' Name 'Wow64DisableWow64FsRedirection';
+Function Wow64EnableWow64FsRedirection(Wow64FsEnableRedirection: LongBool): LongBool; StdCall;
+  External 'Kernel32.dll' Name 'Wow64EnableWow64FsRedirection';
 
 function IsWin64: Boolean;
 
@@ -183,12 +198,18 @@ function RunTask(cmd: String;out ExitStatus:integer;WorkingDir:String='';ShowWin
 // if ID is not found in command line, returns Default
 function GetCmdParams(ID:String;Default:String=''):String;
 function GetCmdParamsEx(LongName:String;ShortName:String='';DefaultValue:String=''):String; overload;
+// Returns the list of "non options" command line arguments.
+//  non options are words in command line which doesn not start with / and - and are not part of.
 function GetCmdArgs(ParamsWithArg: Array Of String): TStringArray;
 
+// zeromem ram at address P
 procedure ResetMemory(out P; Size: Longint);
 
+// get the resource of type RC_DATA named Ident as a bytes string.
 function ExtractResourceString(Ident: String): RawByteString;
 
+// returns a list of all files in rootdir and its subfolders (if True) matching Pattern.
+// if PrependRootdir, returns a full path, else returns relative path to RootDir
 function FindFiles(RootDir: String; Pattern: String='*'; PrependRootdir: Boolean=True; Subfolders: Boolean=False;
     Flags: Integer = faNormal): TStringArray;
 
@@ -875,6 +896,30 @@ begin
     SysUtils.FindClose(Search);
   end;
 end;
+
+{$ifdef windows}
+function GetBIOSDateWindows: AnsiString;
+const
+  WinNT_REG_PATH = 'HARDWARE\DESCRIPTION\System';
+  WinNT_REG_KEY  = 'SystemBiosDate';
+  Win9x_REG_PATH = 'Enum\Root\*PNP0C01\0000';
+  Win9x_REG_KEY  = 'BiosDate';
+var
+  R:TRegistry;
+begin
+  Result := '';
+  R :=  TRegistry.Create;
+  try
+    R.RootKey:=HKEY_LOCAL_MACHINE;
+    if Win32Platform = VER_PLATFORM_WIN32_NT then
+      if R.OpenKey(WinNT_REG_PATH,False) then Result := R.ReadString(WinNT_REG_KEY)
+    else
+      if R.OpenKey(Win9x_REG_PATH, False) then Result := R.ReadString(Win9x_REG_KEY);
+  finally
+    R.Free;
+  end;
+end;
+{$endif}
 
 initialization
   GetLanguageIDs(LanguageFull,Language);

@@ -173,7 +173,11 @@ function GetDomainName: String;
 
 function AppUserIniPath:String;
 function GetAppUserFolder:String;
-function MakePath(const parts:array of String):String;
+// just a copy here from mormot form compatibility
+function MakePath(const Part: array of const; EndWithDelim: boolean = false;
+  Delim: AnsiChar = PathDelim): TFileName;
+function MakeUrlPath(const Part: array of const; EndWithDelim: boolean = false): TFileName;
+
 function GetUniqueTempdir(Prefix: String): String;
 
 function SortableVersion(VersionString:String):String;
@@ -262,17 +266,23 @@ end;
 {$i tiscommonunix.inc}
 {$ENDIF}
 
-function MakePath(const parts:array of String):String;
+function MakePath(const Part: array of const; EndWithDelim: boolean;  Delim: AnsiChar): TFileName;
 var
   i:integer;
 begin
-  result := '';
-  for i:=low(parts) to high(parts) do
+  result := mormot.core.text.MakePath(Part,EndWithDelim,Delim);
+  {for i:=low(parts) to high(parts) do
   begin
     result := Result+parts[i];
     if (i<High(parts)) and (parts[i]<>'') and (parts[i][length(parts[i])] <> PathDelim) then
       result := result+PathDelim;
-  end;
+  end;}
+end;
+
+function MakeUrlPath(const Part: array of const; EndWithDelim: boolean
+  ): TFileName;
+begin
+  Result := MakePath(Part,EndWithDelim,'/');
 end;
 
 procedure UnzipFile(ZipFilePath, OutputPath: String);

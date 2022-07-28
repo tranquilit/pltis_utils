@@ -312,6 +312,7 @@ type
     function Join(Sep: String): String;
     procedure Extend(const other:Array of String);
     procedure ExtendMissing(const other:Array of String);
+    function Count: Cardinal; inline;
   end;
 
 implementation
@@ -2558,6 +2559,7 @@ begin
   end;
 end;
 
+{ TStringArrayHelper }
 function TStringArrayHelper.First: String;
 begin
   if Length(Self) = 0 then
@@ -2584,7 +2586,8 @@ begin
   Result := Self;
 end;
 
-{ TStringArrayHelper }
+
+
 function TStringArrayHelper.Append(const a: String; mustBeUnique: Boolean;
   blacklist: TStringArray): Boolean;
 begin
@@ -2697,6 +2700,11 @@ begin
   for S in Other do
     if not (S in Self) then
       Self.Append(S);
+end;
+
+function TStringArrayHelper.Count: Cardinal;
+begin
+  Result := length(Self);
 end;
 
 

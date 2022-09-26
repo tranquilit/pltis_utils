@@ -44,6 +44,7 @@ type
   TTisInifiles = class(TIniFile)
   public
     function ReadBool(const Section, Ident: string; Default: Boolean): Boolean; override;
+    function GetSections: TStringArray;
 
   end;
 
@@ -183,6 +184,19 @@ begin
     Result:=True
   else if TStringArray(BoolFalseValues).Exist(S) then
     Result:=False;
+end;
+
+function TTisInifiles.GetSections: TStringArray;
+var
+  sl: TStringList;
+begin
+  sl := TStringList.Create();
+  try
+    ReadSections(sl);
+    Result := sl.ToStringArray;
+  finally
+    sl.free;
+  end;
 end;
 
 end.

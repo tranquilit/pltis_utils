@@ -217,6 +217,8 @@ function ExtractResourceString(Ident: String): RawByteString;
 function FindFiles(RootDir: String; Pattern: String='*'; PrependRootdir: Boolean=True; Subfolders: Boolean=False;
     Flags: Integer = faNormal): TStringArray;
 
+function IsDarkMode : Boolean;
+
 const
   Language:String = '';
   LanguageFull:String = '';
@@ -905,6 +907,22 @@ begin
   finally
     SysUtils.FindClose(Search);
   end;
+end;
+
+function IsDarkMode: Boolean;
+{$IFDEF DARWIN}
+var
+  s : AnsiString;
+{$ENDIF}
+begin
+  Result := False;
+  {$IFDEF DARWIN}
+  try
+    RunCommand('/usr/bin/defaults read -g AppleInterfaceStyle', s);
+    Result := Pos('Dark', s) > 0;
+  except
+  end;
+  {$ENDIF}
 end;
 
 {$ifdef windows}

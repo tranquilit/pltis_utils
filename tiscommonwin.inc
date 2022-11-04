@@ -421,7 +421,7 @@ begin
       try
         UnZipper.UnZipAll(tempdir);
         for i := 0 to Length(UnZipper.Entry) -1 do
-          if not UnZipper.Entry[i].dir^.IsFolder then
+          if not UnZipper.Entry[i].dir^.IsDosFolder then
             Files.Add(StringReplace(UnZipper.Entry[i].zipName ,'/','\',[rfReplaceAll]));
       finally
         UnZipper.Free;

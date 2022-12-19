@@ -143,6 +143,23 @@ begin
 end;
 
 function GetApplicationVersion(FileName: String): String;
+{$IFDEF DARWIN}
+var
+  FileInfoDesc : TFileVersionInfo;
+{$ENDIF}
 begin
   Result:=''; // TODO change
+  {$IFDEF DARWIN}
+  if FileName = '' then
+    FileName = ParamStrUTF8(0);
+
+  FileInfoDesc := TFileVersionInfo.Create(nil);
+  try
+    FileInfoDesc.FileName := FileName;
+    FileInfoDesc.ReadFileInfo;
+    Result := FileInfoDesc.VersionStrings.Values['FileVersion'];
+  finally
+    FileInfoDesc.Free;
+  end;
+  {$ENDIF}
 end;

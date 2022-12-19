@@ -248,6 +248,7 @@ uses
   {$ELSE IFDEF WINDOWS}
   , shlobj, winsock2
   {$ENDIF}
+  , FileInfo
   ;
 
 procedure Logger(Msg: String;level:LogLevel=WARNING);

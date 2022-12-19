@@ -151,7 +151,7 @@ begin
   Result:=''; // TODO change
   {$IFDEF DARWIN}
   if FileName = '' then
-    FileName = ParamStrUTF8(0);
+    FileName := ParamStrUTF8(0);
 
   FileInfoDesc := TFileVersionInfo.Create(nil);
   try

@@ -24,7 +24,11 @@ unit tiscommon;
 interface
 
 uses
-    Classes, SysUtils, tisstrings, Process
+    Classes,
+{$ifndef windows}
+    mormot.core.os,
+{$endif}
+    SysUtils, tisstrings, Process
 {$IFDEF WINDOWS}
     , Windows, JwaWindows
 {$ENDIF}
@@ -837,7 +841,6 @@ function RunTask(cmd: String;out ExitStatus:integer;WorkingDir:String='';ShowWin
 var
   AProcess: TProcess;
   AStringList: TStringList;
-  Wow64FsEnableRedirection: LongBool;
 begin
   try
     AProcess := TProcess.Create(nil);

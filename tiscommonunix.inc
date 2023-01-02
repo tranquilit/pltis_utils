@@ -42,7 +42,7 @@ var
   tv: timeVal;
   ptv: ptimeval;
 begin
-
+  Result := False;
   if timeout = -1 then
     ptv := nil
   else
@@ -143,23 +143,18 @@ begin
 end;
 
 function GetApplicationVersion(FileName: String): String;
-{$IFDEF DARWIN}
 var
-  FileInfoDesc : TFileVersionInfo;
-{$ENDIF}
+  fv: TFileVersion;
 begin
-  Result:=''; // TODO change
-  {$IFDEF DARWIN}
-  if FileName = '' then
-    FileName := ParamStrUTF8(0);
-
-  FileInfoDesc := TFileVersionInfo.Create(nil);
+  if Filename='' then
+    Filename := ParamStr(0);
+  if FileExists(FileName) then
   try
-    FileInfoDesc.FileName := FileName;
-    FileInfoDesc.ReadFileInfo;
-    Result := FileInfoDesc.VersionStrings.Values['FileVersion'];
+    fv := TFileVersion.Create(FileName);
+    result := fv.FileVersion;
   finally
-    FileInfoDesc.Free;
-  end;
-  {$ENDIF}
+    fv.Free;
+  end
+  else
+    Result := '';
 end;

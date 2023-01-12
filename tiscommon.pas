@@ -223,6 +223,8 @@ function FindFiles(RootDir: String; Pattern: String='*'; PrependRootdir: Boolean
 
 function IsDarkMode : Boolean;
 
+operator * (F: String; args: Array of const): String; inline;
+
 const
   Language:String = '';
   LanguageFull:String = '';
@@ -952,6 +954,12 @@ begin
   end;
 end;
 {$endif}
+
+
+operator * (F: String; args: Array of const): String; inline;
+begin
+  Result := FormatUtf8(F,args);
+end;
 
 initialization
   GetLanguageIDs(LanguageFull,Language);

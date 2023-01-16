@@ -151,6 +151,7 @@ begin
   if FileExists(FileName) then
   try
     fv := TFileVersion.Create(FileName);
+    fv.RetrieveInformationFromFileName;
     result := fv.FileVersion;
   finally
     fv.Free;

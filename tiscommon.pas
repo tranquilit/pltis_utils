@@ -200,7 +200,7 @@ function IsVersionValid(const version: String; isPackage : Boolean=True; Members
 function GetIPFromHost(const Hostname: String): String;
 
 // Starts a process as shell with cmd command line. Returns stdout of process.
-function RunTask(cmd: String;out ExitStatus:integer;WorkingDir:String='';ShowWindow:TShowWindowOptions=swoHIDE): String;
+function RunTask(cmd: String;out ExitStatus:integer;WorkingDir:String='';ShowWindow:TShowWindowOptions=swoHIDE; Timeout:Integer=-1): RawByteString;
 
 // Get a command line argument with either /id=value  -id=value or --id=value
 // if ID is not found in command line, returns Default
@@ -839,14 +839,13 @@ begin
   end;
 end;
 
-function RunTask(cmd: String;out ExitStatus:integer;WorkingDir:String='';ShowWindow:TShowWindowOptions=swoHIDE): String;
+function RunTask(cmd: String;out ExitStatus:integer;WorkingDir:String='';ShowWindow:TShowWindowOptions=swoHIDE; Timeout:Integer=-1): RawByteString;
 var
   AProcess: TProcess;
-  AStringList: TStringList;
 begin
   try
     AProcess := TProcess.Create(nil);
-    AStringList := TStringList.Create;
+    Result := '';
     try
       AProcess.CommandLine := cmd;
       if WorkingDir<>'' then
@@ -854,12 +853,21 @@ begin
       AProcess.Options := AProcess.Options + [poStderrToOutPut, poWaitOnExit, poUsePipes];
       AProcess.ShowWindow:=ShowWindow;
       AProcess.Execute;
-      while AProcess.Running do;
-      AStringList.LoadFromStream(AProcess.Output);
-      Result := AStringList.Text;
-      ExitStatus:= AProcess.ExitStatus;
+      if TimeOut>0 then
+        AProcess.WaitOnExit(TimeOut)
+      else
+        AProcess.WaitOnExit;
+
+      if Assigned(AProcess.Output) then
+        with TBytesStream.Create do
+        try
+          CopyFrom(AProcess.Output,AProcess.Output.NumBytesAvailable);
+          SetString(Result,PChar(Bytes),Size);
+          ExitStatus:= AProcess.ExitStatus;
+        finally
+          Free;
+        end;
     finally
-      AStringList.Free;
       AProcess.Free;
     end;
   finally

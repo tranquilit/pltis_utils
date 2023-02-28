@@ -48,11 +48,6 @@ function RemoveFromGroup(const Server, User, Group: WideString): NET_API_STATUS;
 procedure SetComputerDescription(desc: String);
 function ComputerDescription: String;
 
-Function Wow64DisableWow64FsRedirection(Var Wow64FsEnableRedirection: LongBool): LongBool; StdCall;
-  External 'Kernel32.dll' Name 'Wow64DisableWow64FsRedirection';
-Function Wow64EnableWow64FsRedirection(Wow64FsEnableRedirection: LongBool): LongBool; StdCall;
-  External 'Kernel32.dll' Name 'Wow64EnableWow64FsRedirection';
-
 function IsWin64: Boolean;
 
 procedure AddToUserPath(APath:String);

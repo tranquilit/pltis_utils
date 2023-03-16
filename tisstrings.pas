@@ -313,6 +313,7 @@ type
     procedure Extend(const other:Array of String);
     procedure ExtendMissing(const other:Array of String);
     function Count: Cardinal; inline;
+    function IsEqual(const other: TStringArray): Boolean;
   end;
 
 implementation
@@ -2707,6 +2708,19 @@ begin
   Result := length(Self);
 end;
 
+function TStringArrayHelper.IsEqual(const other: TStringArray): Boolean;
+var
+  i: Integer;
+begin
+  Result := Count = other.Count;
+  if Result then
+    for i := 0 to Count - 1 do
+      if Self[i] <> Other[i] then
+      begin
+        Result := False;
+        break;
+      end;
+end;
 
 end.
 

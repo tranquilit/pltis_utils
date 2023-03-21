@@ -203,6 +203,7 @@ var
   UserModalsInfo    : PUSER_MODALS_INFO_0;
   dwRet             : DWORD;
 begin
+  FillZero(Result,SizeOf(Result));
   UserModalsInfo := nil;
   dwRet := NetUserModalsGet(nil, 0, Pointer(UserModalsInfo));
   if ((dwRet = NERR_Success) and Assigned(UserModalsInfo)) then
@@ -221,6 +222,7 @@ var
   UserModalsInfo    : PUSER_MODALS_INFO_2;
   dwRet             : DWORD;
 begin
+  result := '';
   UserModalsInfo := nil;
   dwRet := NetUserModalsGet(nil, 2, Pointer(UserModalsInfo));
   if ((dwRet = NERR_Success) and Assigned(UserModalsInfo)) then
@@ -237,6 +239,7 @@ var
   UserModalsInfo    : PUSER_MODALS_INFO_2;
   dwRet             : DWORD;
 begin
+  Result := '';
   UserModalsInfo := nil;
   dwRet := NetUserModalsGet(nil, 2, Pointer(UserModalsInfo));
   if ((dwRet = NERR_Success) and Assigned(UserModalsInfo)) then

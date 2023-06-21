@@ -218,7 +218,21 @@ function FindFiles(RootDir: String; Pattern: String='*'; PrependRootdir: Boolean
 
 function IsDarkMode : Boolean;
 
+// Open a document after a delay (100ms by default)
+procedure OpenDocumentDelayed(APath: String; ADelayMS : Integer = 100);
+
 operator * (F: String; args: Array of const): String; inline;
+
+type
+  { TThreadOpenDocumentDelayed }
+  TThreadOpenDocumentDelayed = Class(TThread)
+  private
+    FDocument: String;
+    FDelay: Integer;
+  public
+    constructor Create(APath: String; ADelayMS: Integer);
+    procedure Execute; override;
+  end;
 
 const
   Language:String = '';
@@ -250,6 +264,7 @@ uses
   , shlobj, winsock2
   {$ENDIF}
   , FileInfo
+  , LCLIntf
   ;
 
 procedure Logger(Msg: String;level:LogLevel=WARNING);
@@ -958,10 +973,34 @@ begin
 end;
 {$endif}
 
+procedure OpenDocumentDelayed(APath: String; ADelayMS: Integer);
+begin
+  TThreadOpenDocumentDelayed.Create(APath, ADelayMS);
+end;
 
 operator * (F: String; args: Array of const): String; inline;
 begin
   Result := FormatUtf8(F,args);
+end;
+
+{ TThreadOpenDocumentDelayed }
+constructor TThreadOpenDocumentDelayed.Create(APath: String; ADelayMS: Integer);
+begin
+  FreeOnTerminate := True;
+  FDocument       := APath;
+  FDelay          := ADelayMS;
+  if FDelay < 10 then FDelay := 10;
+  inherited Create(False);
+end;
+
+procedure TThreadOpenDocumentDelayed.Execute;
+begin
+  if Trim(FDocument) = '' then Exit;
+  try
+    Sleep(FDelay);
+    OpenDocument(FDocument);
+  except
+  end;
 end;
 
 initialization

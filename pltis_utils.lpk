@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
-  <Package Version="4">
+  <Package Version="5">
     <PathDelim Value="\"/>
     <Name Value="pltis_utils"/>
     <Type Value="RunAndDesignTime"/>
@@ -67,16 +67,20 @@
         <Type Value="Include"/>
       </Item10>
     </Files>
-    <RequiredPkgs Count="3">
+    <CompatibilityMode Value="True"/>
+    <RequiredPkgs Count="4">
       <Item1>
-        <PackageName Value="mormot2"/>
+        <PackageName Value="LCLBase"/>
       </Item1>
       <Item2>
-        <PackageName Value="tsmbios"/>
+        <PackageName Value="mormot2"/>
       </Item2>
       <Item3>
-        <PackageName Value="LazUtils"/>
+        <PackageName Value="tsmbios"/>
       </Item3>
+      <Item4>
+        <PackageName Value="LazUtils"/>
+      </Item4>
     </RequiredPkgs>
     <UsageOptions>
       <UnitPath Value="$(PkgOutDir)"/>

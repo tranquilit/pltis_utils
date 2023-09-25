@@ -46,6 +46,10 @@ type
     function ReadBool(const Section, Ident: string; Default: Boolean): Boolean; override;
     function GetSections: TStringArray;
 
+    function WriteBoolIfChanged(Section, Key: String; Value: Boolean; DefaultValue: Boolean = False): Boolean;
+    function WriteIntegerIfChanged(Section, Key: String; Value: Integer; DefaultValue: Integer = - 1): Boolean;
+    function WriteStringIfChanged(Section, Key, Value: String; DefaultValue: String = ''): Boolean;
+
   end;
 
 // Initialization (ini) Files
@@ -198,5 +202,34 @@ begin
     sl.free;
   end;
 end;
+
+function TTisInifiles.WriteStringIfChanged(Section,Key,Value: String; DefaultValue: String=''): Boolean;
+begin
+  if (ValueExists(Section, Key) and (ReadString(Section, Key, DefaultValue) <> Value)) then
+  begin
+    WriteString(Section, Key, Value);
+    Result := True;
+  end;
+end;
+
+function TTisInifiles.WriteIntegerIfChanged(Section, Key: String; Value: Integer; DefaultValue: Integer=-1): Boolean;
+begin
+  if (ValueExists(Section, Key) and (ReadInteger(Section, Key, DefaultValue) <> Value)) then
+  begin
+    WriteInteger(Section, Key, Value);
+    Result := True;
+  end;
+end;
+
+function TTisInifiles.WriteBoolIfChanged(Section, Key: String; Value: Boolean; DefaultValue: Boolean=False): Boolean;
+begin
+  if (ValueExists(Section, Key) and (ReadBool(Section, Key, DefaultValue) <> Value)) then
+  begin
+    WriteBool(Section, Key, Value);
+    Result := True;
+  end;
+end;
+
+
 
 end.

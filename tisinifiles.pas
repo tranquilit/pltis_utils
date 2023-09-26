@@ -205,7 +205,7 @@ end;
 
 function TTisInifiles.WriteStringIfChanged(Section,Key,Value: String; DefaultValue: String=''): Boolean;
 begin
-  if (ValueExists(Section, Key) and (ReadString(Section, Key, DefaultValue) <> Value)) then
+  if (not ValueExists(Section, Key) and (Value <> DefaultValue)) or (ReadString(Section, Key, DefaultValue) <> Value)  then
   begin
     WriteString(Section, Key, Value);
     Result := True;
@@ -214,7 +214,7 @@ end;
 
 function TTisInifiles.WriteIntegerIfChanged(Section, Key: String; Value: Integer; DefaultValue: Integer=-1): Boolean;
 begin
-  if (ValueExists(Section, Key) and (ReadInteger(Section, Key, DefaultValue) <> Value)) then
+  if (not ValueExists(Section, Key) and (Value <> DefaultValue)) or (ReadInteger(Section, Key, DefaultValue) <> Value)  then
   begin
     WriteInteger(Section, Key, Value);
     Result := True;
@@ -223,7 +223,7 @@ end;
 
 function TTisInifiles.WriteBoolIfChanged(Section, Key: String; Value: Boolean; DefaultValue: Boolean=False): Boolean;
 begin
-  if (ValueExists(Section, Key) and (ReadBool(Section, Key, DefaultValue) <> Value)) then
+  if (not ValueExists(Section, Key) and (Value <> DefaultValue)) or (ReadBool(Section, Key, DefaultValue) <> Value)  then
   begin
     WriteBool(Section, Key, Value);
     Result := True;

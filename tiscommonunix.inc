@@ -159,3 +159,8 @@ begin
   else
     Result := '';
 end;
+
+function GetLocalAppdataFolder: String;
+begin
+  Result := MakePath([GetUserDir,'.config']);
+end;

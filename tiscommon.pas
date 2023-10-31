@@ -187,6 +187,7 @@ function SortableVersion(VersionString:String):String;
 // try to convert each version memebr into integer to compare
 // if member is not an int, compare as string.
 function CompareVersion(const v1,v2:String;MembersCount:Integer=-1):integer;
+function CompareVersion(const v1,v2:UnicodeString;MembersCount:Integer=-1):integer;overload;
 // Test if a version is correct. A version must be formatted like this:
 // x-y where x is the software version (x.x...) and y the package version (integer)
 // If isPackage is false, the package version (-y) will be considered has an error
@@ -459,6 +460,11 @@ begin
       Result := Result+tok;
     tok := StrToken(version,'.');
   until tok='';
+end;
+
+function CompareVersion(const v1, v2: UnicodeString; MembersCount: Integer): integer;
+begin
+  Result := CompareVersion(Utf8Encode(v1),Utf8Encode(v2),MembersCount);
 end;
 
 function IsVersionValid(const version: String; isPackage: Boolean;

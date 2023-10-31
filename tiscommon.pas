@@ -80,7 +80,6 @@ function GetOSVersionInfo: TOSVersionInfoEx;
 function IsWinXP:Boolean;
 
 function GetPersonalFolder:String;
-function GetLocalAppdataFolder:String;
 function GetAppdataFolder:String;
 
 function GetStartMenuFolder: String;
@@ -153,6 +152,7 @@ function UserInGroup(Group :DWORD) : Boolean;
 function GetApplicationVersion(FileName:String=''): String;
 {$ENDIF}
 {$ENDIF}
+function GetLocalAppdataFolder: String;
 
 procedure UnzipFile(ZipFilePath,OutputPath:String);
 

@@ -409,31 +409,39 @@ begin
     mkdir(tempdir);
     Logger('Getting new file from: '+fromURL+' into '+tempfn);
     try
-      wget(fromURL,tempfn,Nil,Nil,True);
-      version := GetApplicationVersion(tempfn);
-      if version='' then
-        raise Exception.create('no version information in downloaded file.');
-      Logger(' got '+SetupExename+' version: '+version);
-      Files.Add(SetupExename);
+      if wget(fromURL,tempfn,Nil,Nil,True) then
+      begin
+        version := GetApplicationVersion(tempfn);
+        if version='' then
+          raise Exception.create('no version information in downloaded file.');
+        Logger(' got '+SetupExename+' version: '+version);
+        Files.Add(SetupExename);
+      end
+      else
+        Raise Exception.CreateFmt('Unable to download %s',[fromURL]);
     except
       //trying to get a zip file instead (exe files blocked by proxy ...)
       zipfn:= AppendPathDelim(tempdir)+ChangeFileExt(SetupExename,'.zip');
-      wget(ChangeFileExt(fromURL,ansistring('.zip')),zipfn,Nil,Nil,True);
-      Logger('  unzipping file '+zipfn);
-      UnZipper := TZipRead.Create(zipfn);
-      try
-        UnZipper.UnZipAll(tempdir);
-        for i := 0 to Length(UnZipper.Entry) -1 do
-          if not UnZipper.Entry[i].dir^.IsDosFolder then
-            Files.Add(StringReplace(UnZipper.Entry[i].zipName ,'/','\',[rfReplaceAll]));
-      finally
-        UnZipper.Free;
-      end;
+      if wget(ChangeFileExt(fromURL,ansistring('.zip')),zipfn,Nil,Nil,True) then
+      begin
+        Logger('  unzipping file '+zipfn);
+        UnZipper := TZipRead.Create(zipfn);
+        try
+          UnZipper.UnZipAll(tempdir);
+          for i := 0 to Length(UnZipper.Entry) -1 do
+            if not UnZipper.Entry[i].dir^.IsDosFolder then
+              Files.Add(StringReplace(UnZipper.Entry[i].zipName ,'/','\',[rfReplaceAll]));
+        finally
+          UnZipper.Free;
+        end;
 
-      version := GetApplicationVersion(tempfn);
-      if version='' then
-        raise Exception.create('no version information in downloaded exe file.');
-      Logger(' got '+SetupExename+' version: '+version);
+        version := GetApplicationVersion(tempfn);
+        if version='' then
+          raise Exception.create('no version information in downloaded exe file.');
+        Logger(' got '+SetupExename+' version: '+version);
+      end
+      else
+        Raise Exception.CreateFmt('Unable to download %s',[fromURL]);
     end;
 
     if FileExistsUtf8(tempfn) and (FileSizeUtf8(tempfn)>0) then

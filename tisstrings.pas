@@ -297,6 +297,7 @@ function StrSplitLines(St: String): TStringArray;
 // Return the intersection if 2 array of string
 function StrArrayIntersect(const a1,a2:TStringArray):TStringArray;
 
+function CompareStringArray(const a,b: TStringArray): Integer;
 
 { TStringArrayHelper }
 type
@@ -2558,6 +2559,24 @@ begin
       end;
     end;
   end;
+end;
+
+function CompareStringArray(const a,b: TStringArray): Integer;
+var
+  i: Integer;
+begin
+  for i := low(a) to high(a) do
+  begin
+    if i>high(b) then
+      Exit(1);
+    if a[i] < b[i] then
+      Exit(-1);
+    if a[i] > b[i] then
+      Exit(1);
+  end;
+  if i<high(b) then
+    Exit(-1);
+  Exit(0);
 end;
 
 { TStringArrayHelper }

@@ -911,13 +911,15 @@ var
   Path: String;
 begin
   Result := nil;
+  if (RootDir='') and PrependRootdir then
+    RootDir := GetCurrentDirUTF8;
   Path := IncludeTrailingPathDelimiter(RootDir);
   if SysUtils.FindFirst(Path+Pattern, Flags, Search) = 0 then
   try
     repeat
       if (Search.Name = '.') or (Search.Name = '..') then
         continue;
-      if PrependRootdir then
+      if (RootDir<>'') and PrependRootdir then
         Result.Append(IncludeTrailingPathDelimiter(RootDir)+Search.Name)
       else
         Result.Append(Search.Name);

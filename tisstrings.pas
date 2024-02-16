@@ -290,6 +290,8 @@ function CharToggleCase(const C: Char): Char;
 
 operator in(const a:string;const b:Array Of String):Boolean; inline;
 
+function SnakeCase(CamelString: String): String;
+
 function StrSplit(St: String; Sep: String;Trimmed:Boolean=False;MaxSplit:Integer=-1): TStringArray;
 function StrJoin(Sep: String; StrArray : TStringArray): String;
 function StrSplitLines(St: String): TStringArray;
@@ -320,6 +322,22 @@ type
 implementation
 
 uses character,StrUtils;
+
+function SnakeCase(CamelString: String): String;
+var
+  prevLower: Boolean;
+  i: Integer;
+begin
+  Result := '';
+  prevLower := False;
+  for i := 1 to Length(CamelString) do
+  begin
+    if prevLower and CharIsUpper(CamelString[i]) then
+      Result := Result + '_';
+    Result := Result+ LowerCase(CamelString[i]);
+    prevLower := CharIsLower(CamelString[i]) and (CamelString[i] <> '_');
+  end;
+end;
 
 
 operator in(const a: string; const b: array of String): Boolean;

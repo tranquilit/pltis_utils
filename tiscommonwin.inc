@@ -409,7 +409,7 @@ begin
     mkdir(tempdir);
     Logger('Getting new file from: '+fromURL+' into '+tempfn);
     try
-      if wget(fromURL,tempfn,Nil,Nil,True) then
+      if wget(fromURL,tempfn,Nil,Nil,{enableProxy=}True, {forceReload=}False , {UserAgent=}'') then
       begin
         version := GetApplicationVersion(tempfn);
         if version='' then

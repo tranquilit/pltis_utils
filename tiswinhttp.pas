@@ -104,9 +104,9 @@ begin
       hInet := InternetOpenW(PWideChar(UTF8Decode(sAppName)), INTERNET_OPEN_TYPE_DIRECT, nil, nil, 0) ;
   try
     if not forceReload then
-      hURL := InternetOpenUrlW(hInet, PWideChar(UTF8Decode(fileURL)), nil, 0,  INTERNET_FLAG_DONT_CACHE+INTERNET_FLAG_KEEP_CONNECTION, 0)
+      hURL := InternetOpenUrlW(hInet, PWideChar(UTF8Decode(fileURL)), nil, 0, INTERNET_FLAG_DONT_CACHE+INTERNET_FLAG_KEEP_CONNECTION+INTERNET_FLAG_NO_AUTH , 0)
     else
-      hURL := InternetOpenUrlW(hInet, PWideChar(UTF8Decode(fileURL)), nil, 0, INTERNET_FLAG_DONT_CACHE+INTERNET_FLAG_RELOAD+INTERNET_FLAG_PRAGMA_NOCACHE+INTERNET_FLAG_KEEP_CONNECTION, 0) ;
+      hURL := InternetOpenUrlW(hInet, PWideChar(UTF8Decode(fileURL)), nil, 0, INTERNET_FLAG_DONT_CACHE+INTERNET_FLAG_RELOAD+INTERNET_FLAG_PRAGMA_NOCACHE+INTERNET_FLAG_KEEP_CONNECTION+INTERNET_FLAG_NO_AUTH, 0) ;
     if assigned(hURL) then
     try
       dwIndex  := 0;
@@ -152,6 +152,8 @@ begin
     finally
       InternetCloseHandle(hURL)
     end
+    else
+      raise EHTTPException.Create('Unable to download: "'+fileURL+'", wininet error:'+IntToStr(GetLastError()), 400);
   finally
     InternetCloseHandle(hInet)
   end

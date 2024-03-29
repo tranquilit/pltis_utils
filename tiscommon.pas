@@ -173,9 +173,9 @@ function GetDomainName: String;
 function AppUserIniPath:String;
 function GetAppUserFolder:String;
 // just a copy here from mormot form compatibility
-function MakePath(const Part: array of const; EndWithDelim: boolean = false;
+function MakePath(const Parts: array of String; EndWithDelim: boolean = false;
   Delim: AnsiChar = PathDelim): TFileName;
-function MakeUrlPath(const Part: array of const; EndWithDelim: boolean = false): TFileName;
+function MakeUrlPath(const Part: array of String; EndWithDelim: boolean = false): TFileName;
 
 function GetUniqueTempdir(Prefix: String): String;
 
@@ -286,20 +286,28 @@ end;
 {$i tiscommonunix.inc}
 {$ENDIF}
 
-function MakePath(const Part: array of const; EndWithDelim: boolean;  Delim: AnsiChar): TFileName;
+function MakePath(const Parts: array of String; EndWithDelim: boolean;  Delim: AnsiChar): TFileName;
 var
   i:integer;
 begin
-  result := mormot.core.text.MakePath(Part,EndWithDelim,Delim);
-  {for i:=low(parts) to high(parts) do
+  //result := mormot.core.text.MakePath(Part,EndWithDelim,Delim);
+  Result := '';
+  for i:=low(parts) to high(parts) do
   begin
+    if (i>0) and (parts[i] <> '') and (parts[i][1] <> Delim) and (result <> '') and (result[length(result)] <> Delim) then
+      result := result+Delim;
     result := Result+parts[i];
-    if (i<High(parts)) and (parts[i]<>'') and (parts[i][length(parts[i])] <> PathDelim) then
-      result := result+PathDelim;
-  end;}
+  end;
+  // add additional ending delim if not already in last part
+  if EndWithDelim and ((result='') or (result[length(result)] <> Delim)) then
+      result := result+Delim;
+
+  // remove ending delim if was there in last part
+  if not EndWithDelim and (result<>'') and (result[length(result)] = Delim) then
+      result := copy(result,1,Length(Result)-1);
 end;
 
-function MakeUrlPath(const Part: array of const; EndWithDelim: boolean
+function MakeUrlPath(const Part: array of String; EndWithDelim: boolean
   ): TFileName;
 begin
   Result := MakePath(Part,EndWithDelim,'/');

@@ -86,6 +86,8 @@ function GetStartMenuFolder: String;
 function GetCommonStartMenuFolder: String;
 function GetStartupFolder: String;
 function GetCommonStartupFolder: String;
+function GetSystemFolder: String;
+function GetWindowsFolder: String;
 
 const
   NameUnknown       = 0; // Unknown name type.

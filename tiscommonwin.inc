@@ -581,6 +581,16 @@ begin
   result := GetSpecialFolderLocation(CSIDL_COMMON_STARTUP);
 end;
 
+function GetSystemFolder: String;
+begin
+  Result := GetSpecialFolderLocation(CSIDL_SYSTEM);
+end;
+
+function GetWindowsFolder: String;
+begin
+  Result := GetSpecialFolderLocation(CSIDL_WINDOWS);
+end;
+
 function GetCurrentUser: String;
 var
   charBuffer: array[0..128] of WideChar;

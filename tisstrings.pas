@@ -309,6 +309,7 @@ type
     function ClearEmptyItems(EmptyItems: TStringArray=nil): TStringArray;
     function Append(const a: String; mustBeUnique: Boolean=False; blacklist: TStringArray=nil): Boolean;
     function Exist(const a: String): Boolean;
+    function IndexOf(const a: String): Integer;
     function Remove(const a: String; removeAll: Boolean=True): Boolean;
     function Remove(const other: Array of String): TStringArray;
     function Intersect(const other:TStringArray):TStringArray;
@@ -2644,6 +2645,16 @@ begin
     if Self[i] = a then
       Exit(True);
   Exit(False);
+end;
+
+function TStringArrayHelper.IndexOf(const a: String): Integer;
+var
+  i: Integer;
+begin
+  for i := 0 to Length(Self) - 1 do
+    if Self[i] = a then
+      Exit(i);
+  Exit(-1);
 end;
 
 function TStringArrayHelper.Remove(const a: String; removeAll: Boolean): Boolean;

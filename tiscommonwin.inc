@@ -1212,6 +1212,11 @@ begin
     result := SysUtils.GetEnvironmentVariable('PROGRAMFILES')
 end;
 
+function ProgramFiles: String;
+begin
+  Result := GetSpecialFolderLocation(CSIDL_PROGRAM_FILES);
+end;
+
 function Impersonate(const Username, Password, Domain: string): Boolean;
 var
   TokenHandle       : THandle;

@@ -146,6 +146,7 @@ function StartServiceByName(const AServer,AServiceName: AnsiString):Boolean;
 function StopServiceByName(const AServer, AServiceName: AnsiString):Boolean;
 
 function ProgramFilesX86:String;
+function ProgramFiles: String;
 
 {$ELSE}
 {$IFDEF UNIX}

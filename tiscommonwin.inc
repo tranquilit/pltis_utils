@@ -1214,7 +1214,14 @@ end;
 
 function ProgramFiles: String;
 begin
-  Result := GetSpecialFolderLocation(CSIDL_PROGRAM_FILES);
+  Result := SysUtils.GetEnvironmentVariable('ProgramW6432');
+  if Result = '' then
+  begin
+    Result := GetSpecialFolderLocation(CSIDL_PROGRAM_FILES);
+    if Result.Contains(' (x86)') then //CSIDL_PROGRAM_FILES 32Bits programs return x86 path event if OS is 64Bits
+      Result := Result.Replace(' (x86)', '');
+  end;
+  Result := IncludeTrailingPathDelimiter(Result);
 end;
 
 function Impersonate(const Username, Password, Domain: string): Boolean;

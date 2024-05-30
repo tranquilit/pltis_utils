@@ -652,6 +652,7 @@ var
 begin
   Result:='';
   {$IF defined(UNIX)}
+  if FileExistsUTF8('/etc/samba/smb.conf') then
   try
     FileLines:=TStringList.Create();
     FileLines.LoadFromFile('/etc/samba/smb.conf');

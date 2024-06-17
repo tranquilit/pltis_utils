@@ -152,7 +152,7 @@ begin
   try
     fv := TFileVersion.Create(FileName);
     fv.RetrieveInformationFromFileName;
-    result := fv.FileVersion;
+    result := Trim(fv.FileVersion);
   finally
     fv.Free;
   end

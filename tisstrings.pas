@@ -290,7 +290,7 @@ function CharToggleCase(const C: Char): Char;
 
 operator in(const a:string;const b:Array Of String):Boolean; inline;
 
-function SnakeCase(CamelString: String): String;
+function SnakeCase(Const Value: String): String;
 
 function StrSplit(St: String; Sep: String;Trimmed:Boolean=False;MaxSplit:Integer=-1): TStringArray;
 function StrJoin(Sep: String; StrArray : TStringArray): String;
@@ -322,21 +322,65 @@ type
 
 implementation
 
-uses character,StrUtils;
+uses
+  character,StrUtils;
 
-function SnakeCase(CamelString: String): String;
+function SnakeCase(const Value: string): string;
 var
-  prevLower: Boolean;
   i: Integer;
+  c: Char;
+  IsUpperCase: Boolean;
+  IsLowerCase: Boolean;
+  LastWasLowercase: Boolean;
+  IsNumber: Boolean;
+  LastWasUnderscore: Boolean;
+  IsUnderscore: Boolean;
+  LastWasNumber: Boolean;
+  NextUnderscore: Boolean;
+  LengthValue: Integer;
 begin
+  LastWasLowercase := False;
+  LastWasUnderscore := False;
+  LastWasNumber := False;
+  NextUnderscore := False;
+  LengthValue := Length(Value);
   Result := '';
-  prevLower := False;
-  for i := 1 to Length(CamelString) do
+  for i := 0 to LengthValue - 1 do
   begin
-    if prevLower and CharIsUpper(CamelString[i]) then
-      Result := Result + '_';
-    Result := Result+ LowerCase(CamelString[i]);
-    prevLower := CharIsLower(CamelString[i]) and (CamelString[i] <> '_');
+    c := Value.Chars[i];
+    IsUpperCase := CharInSet(c, ['A' .. 'Z']);
+    IsLowerCase := CharInSet(c, ['a' .. 'z']);
+    IsNumber := CharInSet(c, ['0' .. '9']);
+    IsUnderscore := c = '_';
+
+    if not (IsUpperCase or IsLowerCase or IsNumber or IsUnderscore) then
+    begin
+      NextUnderscore := True;
+      Continue;
+    end
+    else
+    begin
+      if (i > 0) and (not LastWasUnderscore) and
+        (NextUnderscore or
+        (IsUpperCase and (LastWasLowercase or LastWasNumber)) or
+        (IsLowerCase and LastWasNumber) or
+        (IsNumber and (not LastWasNumber)) or
+        (IsUpperCase and (not LastWasLowercase) and ((i + 1) <= (LengthValue - 1)) and
+        CharInSet(Value.Chars[i + 1], ['a' .. 'z']))) then
+      begin
+         Result := Result + '_';
+      end;
+
+      if not (LastWasUnderscore and IsUnderscore) then
+      begin
+        Result := Result + LowerCase(c);
+      end;
+
+      LastWasUnderscore := IsUnderscore or NextUnderscore;
+      LastWasLowercase := IsLowerCase;
+      LastWasNumber := IsNumber;
+      NextUnderscore := False;
+    end;
   end;
 end;
 

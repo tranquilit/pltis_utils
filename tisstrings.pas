@@ -1271,7 +1271,7 @@ function StrPadLeft(const S: string; Len: SizeInt; C: Char): string;
 var
   L: SizeInt;
 begin
-  L := Length(S);
+  L := Utf8Length(S);
   if L < Len then
     Result := StringOfChar(C, Len - L) + S
   else
@@ -1282,7 +1282,7 @@ function StrPadRight(const S: string; Len: SizeInt; C: Char): string;
 var
   L: SizeInt;
 begin
-  L := Length(S);
+  L := Utf8Length(S);
   if L < Len then
     Result := S + StringOfChar(C, Len - L)
   else

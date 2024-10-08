@@ -25,9 +25,7 @@ interface
 
 uses
     Classes,
-{$ifndef windows}
     mormot.core.os,
-{$endif}
     SysUtils, tisstrings, Process
 {$IFDEF WINDOWS}
     , Windows, JwaWindows
@@ -255,7 +253,6 @@ uses
   {$endif}
   tislogging,
   gettext,
-  uSMBIOS,
   mormot.core.zip
   {$IFDEF UNIX}
   , baseunix, errors, sockets, unix,
@@ -353,108 +350,43 @@ begin
 end;
 
 function GetBIOSDate: String;
-var
-  SMBios : TSMBios;
 begin
-  SMBios:=TSMBios.Create;
-  try
-     Result:=SMBios.BiosInfo.ReleaseDateStr;
-  finally
-    SMBios.Free;
-  end;
+  Result := GetSmbios(sbiBiosDate);
 end;
 
 function GetBIOSUUID: String;
-var
-  SMBios : TSMBios;
-  aguidarray: array [0 .. 15] of Byte;
-  aguid: TGUID absolute aguidarray;
 begin
-  SMBios:=TSMBios.Create;
-  try
-    aguidarray := SMBios.SysInfo.RAWSystemInformation^.UUID;
-    Result := ToUtf8(aguid);
-  finally
-    SMBios.Free;
-  end;
+  Result := GetSmbios(sbiUuid)
 end;
 
 function GetSystemSerialNumber: String;
-var
-  SMBios : TSMBios;
 begin
-  SMBios:=TSMBios.Create;
-  try
-    Result := SMBios.SysInfo.SerialNumberStr;
-  finally
-    SMBios.Free;
-  end;
+  Result := GetSmbios(sbiSerial);
 end;
 
 function GetSystemAssetTag: String;
-var
-  SMBios : TSMBios;
-  board: TBaseBoardInformation;
 begin
-  SMBios:=TSMBios.Create;
-  try
-    Result :='';
-    for board in SMBios.BaseBoardInfo do
-    begin
-      Result := board.AssetTagStr;
-      break;
-    end;
-  finally
-    SMBios.Free;
-  end;
+  Result := GetSmbios(sbiBoardAssetTag);
 end;
 
 function GetSystemProductName: String;
-var
-  SMBios : TSMBios;
 begin
-  SMBios:=TSMBios.Create;
-  try
-    Result := SMBios.SysInfo.ProductNameStr;
-  finally
-    SMBios.Free;
-  end;
+  Result := GetSmbios(sbiProductName);
 end;
 
 function GetSystemManufacturer: String;
-var
-  SMBios : TSMBios;
 begin
-  SMBios:=TSMBios.Create;
-  try
-    Result := SMBios.SysInfo.ManufacturerStr;
-  finally
-    SMBios.Free;
-  end;
+  Result := GetSmbios(sbiBoardManufacturer);
 end;
 
 function GetBIOSVendor: String;
-var
-  SMBios : TSMBios;
 begin
-  SMBios:=TSMBios.Create;
-  try
-     Result:=SMBios.BiosInfo.VendorStr;
-  finally
-    SMBios.Free;
-  end;
+  Result := GetSmbios(sbiBiosVendor);
 end;
 
 function GetBIOSVersion: String;
-var
-  SMBios : TSMBios;
 begin
-  SMBios:=TSMBios.Create;
-  try
-     Result:=SMBios.BiosInfo.VersionStr;
-  finally
-    SMBios.Free;
-  end;
+  Result := GetSmbios(sbiBiosVersion);
 end;
 
 function SortableVersion(VersionString: String): String;

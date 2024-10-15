@@ -892,6 +892,17 @@ var
 {$ENDIF}
 begin
   Result := False;
+  {$IFDEF Windows}
+  with TRegistry.Create do
+  try
+    RootKey := HKEY_CURRENT_USER;
+    if OpenKeyReadOnly('\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize')
+      and ValueExists('AppsUseLightTheme') then
+      Result := not ReadBool('AppsUseLightTheme');
+  finally
+    Free;
+  end;
+  {$ENDIF}
   {$IFDEF DARWIN}
   try
     RunCommand('/usr/bin/defaults read -g AppleInterfaceStyle', s);

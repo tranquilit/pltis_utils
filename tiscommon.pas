@@ -561,14 +561,15 @@ begin
   if Result = '' then
     Result := GetEnvironmentVariable('USER');
   {$ELSEIF defined(WINDOWS)}
-  dwUSize := 21 * SizeOf(WideChar); // user name can be up to 20 characters
+  {dwUSize := 21 * SizeOf(WideChar); // user name can be up to 20 characters
   GetMem( pcUser, dwUSize); // allocate memory for the string
   try
-         if GetUserNameW( pcUser, dwUSize ) then
-              Result := pcUser;
+    if GetUserNameW( pcUser, dwUSize ) then
+      Result := pcUser;
   finally
-         FreeMem( pcUser ); // now free the memory allocated for the string
-  end;
+    FreeMem( pcUser ); // now free the memory allocated for the string
+  end;}
+  Result := Utf8Encode(sysutils.GetEnvironmentVariable('USERNAME'));
   {$ENDIF}
 end;
 

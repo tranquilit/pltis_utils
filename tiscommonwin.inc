@@ -834,7 +834,7 @@ var
 begin
   Result:=ssUnknown;
 
-  SCMAccess:=SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE or SC_MANAGER_QUERY_LOCK_STATUS;
+  SCMAccess := SC_MANAGER_CONNECT or SC_MANAGER_ENUMERATE_SERVICE or SC_MANAGER_QUERY_LOCK_STATUS;
   Access:=SERVICE_INTERROGATE or GENERIC_READ;
 
   SCMHandle:= OpenSCManager(PAnsiChar(AServer), Nil, SCMAccess);
@@ -865,24 +865,22 @@ begin
   p:=nil;
   Result:=False;
 
-  SCMHandle:= OpenSCManager(PAnsiChar(AServer), nil, SC_MANAGER_ALL_ACCESS);
+  SCMHandle := OpenSCManager(PAnsiChar(AServer), nil, SC_MANAGER_ALL_ACCESS);
   if SCMHandle <> 0 then
   try
-    ServiceHandle:=OpenService(SCMHandle,PAnsiChar(AServiceName),SERVICE_ALL_ACCESS);
+    ServiceHandle := OpenService(SCMHandle,PAnsiChar(AServiceName),SERVICE_ALL_ACCESS);
     if ServiceHandle <> 0 then
-    begin
-      Result:=StartService(ServiceHandle,0,p);
-      if Result then
-      begin
-        ts := Now;
-        repeat
-          ResetMemory(SS, SizeOf(SS));
-          QueryServiceStatus(ServiceHandle,SS);
-        until (SS.dwCurrentState = SERVICE_RUNNING) or ((Now-ts)> 5/24/3600);
-        Result := SS.dwCurrentState = SERVICE_RUNNING;
-      end;
+    try
+      StartService(ServiceHandle,0,p);
+      ts := Now;
+      repeat
+        ResetMemory(SS, SizeOf(SS));
+        QueryServiceStatus(ServiceHandle,SS);
+      until (SS.dwCurrentState = SERVICE_RUNNING) or ((Now-ts)> 5/24/3600);
+      Result := SS.dwCurrentState = SERVICE_RUNNING;
+    finally
+      CloseServiceHandle(ServiceHandle);
     end;
-    CloseServiceHandle(ServiceHandle);
   finally
     CloseServiceHandle(SCMHandle);
   end;

@@ -133,6 +133,17 @@ type
 const
   ssPendingStates = [ssStartPending, ssStopPending, ssContinuePending, ssPausePending];
 
+
+type
+  TServiceStartType =
+   (stBootStart=SERVICE_BOOT_START,
+    stSystemStart=SERVICE_SYSTEM_START,
+    stAutoStart=SERVICE_AUTO_START,
+    stDemandStart=SERVICE_DEMAND_START, // manual
+    stDisabled=SERVICE_DISABLED)
+   ;
+
+
 function IsAdminLoggedOn: Boolean;
 function ProcessExists(ExeFileName: string): boolean;
 function KillTask(ExeFileName: string): integer;
@@ -142,6 +153,8 @@ function Impersonate(const Username, Password, Domain: string): Boolean;
 function GetServiceStatusByName(const AServer,AServiceName:ansistring):TServiceState;
 function StartServiceByName(const AServer,AServiceName: AnsiString):Boolean;
 function StopServiceByName(const AServer, AServiceName: AnsiString):Boolean;
+function SetServiceStartType(const AServer, AServiceName: AnsiString; const StartType: TServiceStartType ):Boolean;
+function GetServiceStartType(const AServer, AServiceName: AnsiString; out StartType: TServiceStartType): Boolean;
 
 function ProgramFilesX86:String;
 function ProgramFiles: String;

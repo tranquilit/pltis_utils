@@ -921,6 +921,66 @@ begin
   end;
 end;
 
+function GetServiceStartType(const AServer, AServiceName: AnsiString; out StartType: TServiceStartType): Boolean;
+var
+  ServiceHandle,
+  SCMHandle, ServiceConfigSize: DWORD;
+  PServiceConfig: LPQUERY_SERVICE_CONFIG;
+begin
+  Result := False;
+
+  SCMHandle := OpenSCManager(PAnsiChar(AServer), nil, SC_MANAGER_ALL_ACCESS);
+  if SCMHandle <> 0 then
+  try
+    ServiceHandle := OpenService(SCMHandle, PAnsiChar(AServiceName), STANDARD_RIGHTS_REQUIRED or SERVICE_QUERY_CONFIG or SERVICE_QUERY_STATUS);
+    if ServiceHandle <> 0 then
+    try
+      ServiceConfigSize := 0;
+      QueryServiceConfig(ServiceHandle,Nil,0, ServiceConfigSize);
+      PServiceConfig := GetMem(ServiceConfigSize);
+      try
+        if QueryServiceConfig(ServiceHandle,PServiceConfig, ServiceConfigSize, ServiceConfigSize) then
+        begin
+          Result := True;
+          StartType := TServiceStartType(PServiceConfig^.dwStartType);
+        end
+        else
+          Result := False;
+
+      finally
+        FreeMem(PServiceConfig);
+      end;
+    finally
+      CloseServiceHandle(ServiceHandle);
+    end
+    else
+      Result := False;
+  finally
+    CloseServiceHandle(SCMHandle);
+  end;
+end;
+
+function SetServiceStartType(const AServer, AServiceName: AnsiString; const StartType: TServiceStartType ):Boolean;
+var
+  ServiceHandle,
+  SCMHandle: DWORD;
+begin
+  Result := False;
+
+  SCMHandle := OpenSCManager(PAnsiChar(AServer), nil, SC_MANAGER_ALL_ACCESS);
+  if SCMHandle <> 0 then
+  try
+    ServiceHandle := OpenService(SCMHandle, PAnsiChar(AServiceName), SERVICE_ALL_ACCESS);
+    if ServiceHandle <> 0 then
+      Result := ChangeServiceConfigA(ServiceHandle,SERVICE_NO_CHANGE,ord(StartType),SERVICE_NO_CHANGE,Nil,Nil,Nil,Nil,Nil,Nil,Nil)
+    else
+      Result := False;
+    CloseServiceHandle(ServiceHandle);
+  finally
+    CloseServiceHandle(SCMHandle);
+  end;
+end;
+
 function GetGroups(srvName, usrName: WideString):TStringArray;
 var
   dwEntriesRead, dwEntriesTotal: DWORD;
@@ -1179,7 +1239,7 @@ procedure SetUserProfilePath(SID: String; ImagePath: String);
 var
   r: TRegistry;
 begin
-  r := TRegistry.Create(KEY_ALL_ACCESS);
+  r := TRegistry.Create(KEY_ALL_ACCESS or KEY_WOW64_64KEY);
   try
     r.RootKey:=HKEY_LOCAL_MACHINE;
     r.OpenKey('SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\'+SID,True);
@@ -1194,7 +1254,7 @@ function GetUserProfilePath(SID:String):String;
 var
   r: TRegistry;
 begin
-  r := TRegistry.Create(KEY_READ);
+  r := TRegistry.Create(KEY_READ or KEY_WOW64_64KEY);
   try
     r.RootKey:=HKEY_LOCAL_MACHINE;
     r.OpenKey('SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\'+SID,False);
@@ -1403,7 +1463,7 @@ procedure SetNewComputerNameRegistry(NewName:String);
 var
   r:TRegistry;
 begin
-  r := TRegistry.Create();
+  r := TRegistry.Create(KEY_ALL_ACCESS or KEY_WOW64_64KEY);
   try
     if r.OpenKey('SYSTEM\CurrentControlSet\Services\Tcpip\Parameters',False) then
     begin

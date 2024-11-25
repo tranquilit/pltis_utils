@@ -521,23 +521,23 @@ begin
   Registry.Free;
 end;
 
-function GetUserNameEx(NameFormat: DWORD; lpNameBuffer: LPSTR; var nSize: DWORD): Boolean; stdcall; external
-  'secur32.dll' Name 'GetUserNameExA';
+function GetUserNameExW(NameFormat: DWORD; lpNameBuffer: LPWSTR; var nSize: DWORD): Boolean; stdcall; external
+  'secur32.dll' Name 'GetUserNameExW';
 
-function GetCurrentUserName(fFormat: DWORD=NameSamCompatible) : Ansistring;
+function GetCurrentUserName(fFormat: TUsernameFormat=NameSamCompatible) : String;
 const
   cnMaxUserNameLen = 254;
 var
-  sUserName     : Ansistring;
+  sUserName     : WideString;
   dwUserNameLen : DWord;
 begin
   dwUserNameLen := cnMaxUserNameLen-1;
   SetLength( sUserName, cnMaxUserNameLen );
-  GetUserNameEx(fFormat,
-    PChar( sUserName ),
+  GetUserNameExW(ord(fFormat),
+    PWideChar( sUserName ),
     dwUserNameLen );
   SetLength( sUserName, dwUserNameLen );
-  Result := sUserName;
+  Result := Utf8Encode(sUserName);
 end;
 
 function GetPersonalFolder:String;
@@ -1290,13 +1290,13 @@ begin
   Result := ImpersonateLoggedOnUser(TokenHandle);
 end;
 
-function GetComputerNameExString(ANameFormat: COMPUTER_NAME_FORMAT): WideString;
+function GetComputerNameExString(ANameFormat: windows.COMPUTER_NAME_FORMAT): WideString;
 var
   nSize: DWORD;
 begin
   nSize := 1024;
   SetLength(Result, nSize);
-  if GetComputerNameExW(ANameFormat, PWideChar(Result), nSize) then
+  if windows.GetComputerNameExW(ANameFormat, PWideChar(Result), @nSize) then
     SetLength(Result, nSize)
   else
     Result := '';

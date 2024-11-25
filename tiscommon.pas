@@ -34,7 +34,7 @@ uses
 
 {$IFDEF WINDOWS}
 procedure UpdateApplication(fromURL:String;SetupExename,SetupParams,ExeName,RestartParam:String);
-function GetComputerNameExString(ANameFormat: COMPUTER_NAME_FORMAT): WideString;
+function GetComputerNameExString(ANameFormat: windows.COMPUTER_NAME_FORMAT): WideString;
 procedure SetComputerName(newname:WideString);
 procedure SetComputerNameEx(newname:WideString;ANameFormat: COMPUTER_NAME_FORMAT );
 procedure SetNewComputerNameRegistry(NewName:String);
@@ -87,19 +87,22 @@ function GetCommonStartupFolder: String;
 function GetSystemFolder: String;
 function GetWindowsFolder: String;
 
-const
-  NameUnknown       = 0; // Unknown name type.
-  NameFullyQualifiedDN = 1; // Fully qualified distinguished name
-  NameSamCompatible = 2; // Windows NT® 4.0 account name
-  NameDisplay       = 3; // A "friendly" display name
-  NameUniqueId      = 6; // GUID string that the IIDFromString function returns
-  NameCanonical     = 7; // Complete canonical name
-  NameUserPrincipal = 8; // User principal name
-  NameCanonicalEx   = 9;
-  NameServicePrincipal = 10; // Generalized service principal name
-  DNSDomainName     = 11; // DNS domain name, plus the user name
+type TUsernameFormat=(
+  NameUnknown       = 0, // Unknown name type.
+  NameFullyQualifiedDN = 1, // Fully qualified distinguished name (for example, CN=Jeff Smith,OU=Users,DC=Engineering,DC=Microsoft,DC=Com).
+  NameSamCompatible = 2, // Windows NT® 4.0 account name  (for example, Engineering\JSmith).
+  NameDisplay       = 3, // A "friendly" display name
+  NameUniqueId      = 6, // GUID string that the IIDFromString function returns (for example, {4fa050f0-f561-11cf-bdd9-00aa003a77b6}).
+  NameCanonical     = 7, // Complete canonical name (for example, engineering.microsoft.com/software/someone).
+  NameUserPrincipal = 8, // The user principal name (for example, someone@example.com).
+  NameCanonicalEx   = 9, // The same as NameCanonical except that the rightmost forward slash (/) is replaced with a new line character (\n), even in a domain-only case (for example, engineering.microsoft.com/software\nJSmith
+  NameServicePrincipal = 10, // The generalized service principal name (for example, www/www.microsoft.com@microsoft.com)
+  NameDnsDomain      = 12, // The DNS domain name followed by a backward-slash and the SAM user name.
+  NameGivenName      = 13, // The first name or given name of the user. Note: This type is only available for GetUserNameEx calls for an Active Directory user.
+  NameSurname        = 14  // The last name or surname of the user. Note: This type is only available for GetUserNameEx calls for an Active Directory user.
+  );
 
-function GetCurrentUserName(fFormat: DWORD=NameSamCompatible) : Ansistring;
+function GetCurrentUserName(fFormat: TUsernameFormat=NameSamCompatible) : Ansistring;
 function GetCurrentUserSid: Ansistring;
 
 procedure SetUserProfilePath(SID:String;ImagePath:String);
@@ -179,6 +182,7 @@ function GetBIOSUUID: String;
 function GetSystemSerialNumber: String;
 function GetSystemAssetTag: String;
 
+function GetComputerFQDN : String;
 function GetComputerName : String;
 function GetUserName : String;
 function GetWorkgroupName: String;
@@ -293,9 +297,9 @@ begin
   end;
 end;
 
-{$IF defined(WINDOWS)}
+{$ifdef windows}
 {$i tiscommonwin.inc}
-{$ELSEIF defined(UNIX)}
+{$else}
 {$i tiscommonunix.inc}
 {$ENDIF}
 
@@ -533,6 +537,15 @@ begin
       result := CompareStr(pack1,pack2)
     end;
   end;
+end;
+
+function GetComputerFQDN: String;
+begin
+  {$ifdef windows}
+  Result := GetComputerNameExString(windows.ComputerNameDnsFullyQualified);
+  {$else}
+  Result :=  gethostname();
+  {$endif}
 end;
 
 function GetComputerName : String;

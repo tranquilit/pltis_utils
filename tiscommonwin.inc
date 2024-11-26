@@ -524,7 +524,7 @@ end;
 function GetUserNameExW(NameFormat: DWORD; lpNameBuffer: LPWSTR; var nSize: DWORD): Boolean; stdcall; external
   'secur32.dll' Name 'GetUserNameExW';
 
-function GetCurrentUserName(fFormat: TUsernameFormat=NameSamCompatible) : String;
+function GetCurrentUserName(fFormat: TUsernameFormat): Ansistring;
 const
   cnMaxUserNameLen = 254;
 var
@@ -556,9 +556,11 @@ begin
   result :=  GetSpecialFolderLocation(CSIDL_APPDATA);
 end;
 
-function GetAppUserFolder : String;
+function GetAppUserFolder(AApplicationName: String): String;
 begin
-  Result := IncludeTrailingPathDelimiter(GetSpecialFolderLocation(CSIDL_APPDATA)) + ApplicationName;
+  if AApplicationName='' then
+    AApplicationName := ApplicationName;
+  Result := IncludeTrailingPathDelimiter(GetSpecialFolderLocation(CSIDL_APPDATA)) + AApplicationName;
 end;
 
 function GetStartMenuFolder: String;
@@ -608,14 +610,16 @@ begin
 end;
 
 // to store use specific settings for this application
-function AppUserIniPath: String;
+function AppUserIniPath(AApplicationName: String): String;
 var
   dir : String;
 begin
-  dir := IncludeTrailingPathDelimiter(GetAppdataFolder)+ApplicationName;
+  if AApplicationName='' then
+    AApplicationName := ApplicationName;
+  dir := IncludeTrailingPathDelimiter(GetAppdataFolder)+AApplicationName;
   if not DirectoryExistsUTF8(dir) then
     MkDir(dir);
-  Result:=IncludeTrailingPathDelimiter(dir)+ApplicationName+'.ini';
+  Result:=IncludeTrailingPathDelimiter(dir)+AApplicationName+'.ini';
 end;
 
 

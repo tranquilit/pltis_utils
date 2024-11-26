@@ -188,11 +188,17 @@ function GetUserName : String;
 function GetWorkgroupName: String;
 function GetDomainName: String;
 
-function AppUserIniPath:String;
-function GetAppUserFolder:String;
+// returns <appdata(roaming)>\<applicationname>\<applicationname>.ini
+// creates applicationname folder if does not exists
+function AppUserIniPath(AApplicationName: String=''): String;
+// returns <appdata(roaming)>\<applicationname>.ini
+// don't create dir if it does not exists.
+function GetAppUserFolder(AApplicationName: String=''): String;
+
 // just a copy here from mormot form compatibility
 function MakePath(const Parts: array of String; EndWithDelim: boolean = false;
   Delim: AnsiChar = PathDelim): TFileName;
+
 function MakeUrlPath(const Part: array of String; EndWithDelim: boolean = false): TFileName;
 
 function GetUniqueTempdir(Prefix: String): String;
@@ -771,7 +777,7 @@ begin
   end;
 end;
 
-function GetCmdArgs(ParamsWithArg: Array Of String): TStringArray;
+function GetCmdArgs(ParamsWithArg: array of String): TStringArray;
 var
   i: integer;
   ParamName,ParamValue,S: String;
@@ -968,7 +974,7 @@ begin
   TThreadOpenDocumentDelayed.Create(APath, ADelayMS);
 end;
 
-operator * (F: String; args: Array of const): String; inline;
+operator * (F: String; args: array of const): String;
 begin
   Result := FormatUtf8(F,args);
 end;

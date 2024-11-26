@@ -130,16 +130,20 @@ begin
   {$ENDIF}
 end;
 
-function AppUserIniPath:String;
+function AppUserIniPath(AApplicationName: String): String;
 begin
+  if AApplicationName='' then
+    AApplicationName := ApplicationName;
   if not DirectoryExistsUTF8(GetAppUserFolder) then
     MkDir(GetAppUserFolder);
-  Result:=IncludeTrailingPathDelimiter(IncludeTrailingPathDelimiter(GetAppUserFolder)+'.config')+ApplicationName+'.ini';
+  Result:=IncludeTrailingPathDelimiter(IncludeTrailingPathDelimiter(GetAppUserFolder)+'.config')+AApplicationName+'.ini';
 end;
 
-function GetAppUserFolder : String;
+function GetAppUserFolder(AApplicationName: String): String;
 begin
-  Result := IncludeTrailingPathDelimiter(GetUserDir)+ApplicationName;
+  if AApplicationName='' then
+    AApplicationName := ApplicationName;
+  Result := IncludeTrailingPathDelimiter(GetUserDir)+AApplicationName;
 end;
 
 function GetApplicationVersion(FileName: String): String;

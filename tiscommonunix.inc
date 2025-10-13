@@ -177,7 +177,7 @@ begin
   begin
     if (id = GetProcessID) then
       Continue;
-    ProcessName := EnumProcessName(id);
+    ProcessName := LowerCase(ExtractFilename(EnumProcessName(id)));
     if ExeFileName = ProcessName then
       Exit(True);
   end;

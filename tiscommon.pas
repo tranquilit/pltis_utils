@@ -212,8 +212,8 @@ function SortableVersion(VersionString:String):String;
 // returns -1 if v1<v2, 0 if v1=v2 and +1 if v1>v2
 // try to convert each version memebr into integer to compare
 // if member is not an int, compare as string.
-function CompareVersion(const v1,v2:String;MembersCount:Integer=-1):integer;
-function CompareVersion(const v1,v2:UnicodeString;MembersCount:Integer=-1):integer;overload;
+function CompareVersion(const v1,v2:String;MembersCount:Integer=-1; WithPackaging: Boolean=True):integer;
+function CompareVersion(const v1,v2:UnicodeString;MembersCount:Integer=-1; WithPackaging: Boolean=True):integer;overload;
 // Test if a version is correct. A version must be formatted like this:
 // x-y where x is the software version (x.x...) and y the package version (integer)
 // If isPackage is false, the package version (-y) will be considered has an error
@@ -430,9 +430,9 @@ begin
   until tok='';
 end;
 
-function CompareVersion(const v1, v2: UnicodeString; MembersCount: Integer): integer;
+function CompareVersion(const v1, v2: UnicodeString; MembersCount: Integer; WithPackaging: Boolean): integer;
 begin
-  Result := CompareVersion(Utf8Encode(v1),Utf8Encode(v2),MembersCount);
+  Result := CompareVersion(Utf8Encode(v1), Utf8Encode(v2), MembersCount, WithPackaging);
 end;
 
 function IsVersionValid(const version: String; isPackage: Boolean;
@@ -479,7 +479,7 @@ begin
   Exit(True);
 end;
 
-function CompareVersion(const v1,v2:String;MembersCount:Integer=-1):integer;
+function CompareVersion(const v1,v2:String;MembersCount:Integer=-1; WithPackaging: Boolean=True):integer;
 var
   version1,version2,pack1,pack2,tok1,tok2:String;
   I1,I2: Int64;
@@ -532,8 +532,8 @@ begin
     inc(MemberIdx);
   until (result<>0) or (tok1='') or (tok2='');
 
-  // packaging
-  if (Result=0) and ((pack1<>'') or (pack2<>'')) then
+  // packaging (last part after '-' in '1.2.3.4-abcd'
+  if WithPackaging and (Result=0) and ((pack1<>'') or (pack2<>'')) then
   begin
     if (pack1<>'') or (pack2<>'') then
     try

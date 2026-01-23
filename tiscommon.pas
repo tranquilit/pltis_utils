@@ -609,6 +609,53 @@ begin
   {$ENDIF}
 end;
 
+function GetDomainName: String;
+var
+  {$IF defined(UNIX)}
+  Host: String;
+  {$ELSEIF defined(WINDOWS)}
+  hProcess, hAccessToken: THandle;
+  InfoBuffer: PWideChar;
+  AccountName: array [0..UNLEN] of WideChar;
+  DomainName: array [0..UNLEN] of WideChar;
+
+  InfoBufferSize: Cardinal;
+  AccountSize: Cardinal;
+  DomainSize: Cardinal;
+  snu: SID_NAME_USE;
+  {$ENDIF}
+begin
+  Result := '';
+  {$IF defined(UNIX)}
+  Result := '';
+  Host := gethostname();
+  if (Host <> '') and (Pos('.', Host) > 0) then
+    Result := Copy(Host, Pos('.', Host) + 1, 255);
+  {$ELSEIF defined(WINDOWS)}
+  InfoBufferSize := 1000;
+  AccountSize := SizeOf(AccountName);
+  DomainSize := SizeOf(DomainName);
+  hProcess := GetCurrentProcess;
+  if OpenProcessToken(hProcess, TOKEN_READ, hAccessToken) then
+  try
+    GetMem(InfoBuffer, InfoBufferSize);
+    try
+      if GetTokenInformation(hAccessToken, TokenUser, InfoBuffer, InfoBufferSize, InfoBufferSize) then
+        LookupAccountSidW(nil, PSIDAndAttributes(InfoBuffer)^.sid, AccountName, AccountSize,
+                         DomainName, DomainSize, snu)
+      else
+        RaiseLastOSError;
+    finally
+      FreeMem(InfoBuffer)
+    end;
+    Result := DomainName;
+  finally
+    CloseHandle(hAccessToken);
+  end
+  {$ENDIF}
+end;
+
+
 function GetUserNameAndDomain: String;
 var
   Domain: String;
@@ -690,55 +737,6 @@ begin
   {$ENDIF}
 end;
 
-function GetDomainName: String;
-var
-  {$IF defined(UNIX)}
-  Host: String;
-  {$ELSEIF defined(WINDOWS)}
-  hProcess, hAccessToken: THandle;
-  InfoBuffer: PWideChar;
-  AccountName: array [0..UNLEN] of WideChar;
-  DomainName: array [0..UNLEN] of WideChar;
-
-  InfoBufferSize: Cardinal;
-  AccountSize: Cardinal;
-  DomainSize: Cardinal;
-  snu: SID_NAME_USE;
-  {$ENDIF}
-begin
-  Result := '';
-  {$IF defined(UNIX)}
-  Result := unix.GetDomainName();
-  if Result = '(none)' then
-  begin
-    Result := '';
-    Host := gethostname();
-    if (Host <> '') and (Pos('.', Host) > 0) then
-      Result := Copy(Host, Pos('.', Host) + 1, 255);
-  end;
-  {$ELSEIF defined(WINDOWS)}
-  InfoBufferSize := 1000;
-  AccountSize := SizeOf(AccountName);
-  DomainSize := SizeOf(DomainName);
-  hProcess := GetCurrentProcess;
-  if OpenProcessToken(hProcess, TOKEN_READ, hAccessToken) then
-  try
-    GetMem(InfoBuffer, InfoBufferSize);
-    try
-      if GetTokenInformation(hAccessToken, TokenUser, InfoBuffer, InfoBufferSize, InfoBufferSize) then
-        LookupAccountSidW(nil, PSIDAndAttributes(InfoBuffer)^.sid, AccountName, AccountSize,
-                         DomainName, DomainSize, snu)
-      else
-        RaiseLastOSError;
-    finally
-      FreeMem(InfoBuffer)
-    end;
-    Result := DomainName;
-  finally
-    CloseHandle(hAccessToken);
-  end
-  {$ENDIF}
-end;
 
 procedure ResetMemory(out P; Size: Longint);
 begin

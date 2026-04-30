@@ -668,10 +668,11 @@ begin
   else if UpperCase(sysutils.GetEnvironmentVariable('COMPUTERNAME')) = UpperCase('\\'+sysutils.GetEnvironmentVariable('LOGONSERVER')) then
     Result := Result + '@.';
   {$else}
-  Result := GetUserName;
-  Domain := GetDomainName;
+  Result := GetUserName; // on linux, joined to domain with sssd, domain already in GetUsername
+  {Domain := GetDomainName;
   if Domain <> '' then
     Result := Result + '@' + Domain;
+  }
   {$endif}
 end;
 

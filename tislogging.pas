@@ -48,7 +48,7 @@ begin
     if Assigned(loghook) then
       loghook(Msg)
     else if IsConsole then
-      WriteLn(Format('%s [%s] %s',[FormatDateTime('YYYY-mm-dd hh:nn:ss',Now),StrLogLevel[level],Msg]));
+      WriteLn(StdErr, Format('%s [%s] %s',[FormatDateTime('YYYY-mm-dd hh:nn:ss',Now),StrLogLevel[level],Msg]));
     {$ifdef windows}
     if level=DEBUG then
       ODS(Msg);

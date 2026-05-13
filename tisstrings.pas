@@ -311,7 +311,7 @@ type
     function Exist(const a: String): Boolean;
     function IndexOf(const a: String): Integer;
     function Remove(const a: String; removeAll: Boolean=True): Boolean;
-    function Remove(const other: Array of String): TStringArray;
+    function Remove(const other: Array of String): Boolean;
     function Intersect(const other:TStringArray):TStringArray;
     function Join(Sep: String): String;
     procedure Extend(const other:Array of String);
@@ -2733,13 +2733,14 @@ begin
   Exit(Length(Self) <> initLength);
 end;
 
-function TStringArrayHelper.Remove(const other: array of String): TStringArray;
+function TStringArrayHelper.Remove(const other: array of String): Boolean;
 var
   Item: String;
 begin
+  Result := False;
   for Item in other do
-    Self.Remove(Item);
-  Result := Self;
+    if Self.Remove(Item) then
+      Result := True;
 end;
 
 function TStringArrayHelper.Intersect(const other:TStringArray):TStringArray;

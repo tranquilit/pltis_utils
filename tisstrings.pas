@@ -318,6 +318,7 @@ type
     procedure ExtendMissing(const other:Array of String);
     function Count: Cardinal; inline;
     function IsEqual(const other: TStringArray): Boolean;
+    function Compare(const b: TStringArray): Integer;
   end;
 
 implementation
@@ -2628,6 +2629,7 @@ function CompareStringArray(const a,b: TStringArray): Integer;
 var
   i: Integer;
 begin
+  i := -1;
   for i := low(a) to high(a) do
   begin
     if i>high(b) then
@@ -2813,6 +2815,11 @@ begin
         Result := False;
         break;
       end;
+end;
+
+function TStringArrayHelper.Compare(const b: TStringArray): Integer;
+begin
+  Result := CompareStringArray(Self,b);
 end;
 
 end.

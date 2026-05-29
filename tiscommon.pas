@@ -25,7 +25,9 @@ interface
 
 uses
     Classes,
+    mormot.core.base,
     mormot.core.os,
+    mormot.core.os.security,
     SysUtils, tisstrings, Process
 {$IFDEF WINDOWS}
     , Windows, JwaWindows
@@ -168,8 +170,12 @@ function UserInGroup(Group :DWORD) : Boolean;
 
 function GetApplicationVersion(FileName:String=''): String;
 function ProcessExists(ExeFileName: string): boolean;
+
 {$ENDIF}
 {$ENDIF}
+
+function GetDomainHostnameFromKeytab(KTFilename:String): String;
+
 function GetLocalAppdataFolder: String;
 
 procedure UnzipFile(ZipFilePath,OutputPath:String);
@@ -268,8 +274,8 @@ const
 implementation
 
 uses
-  mormot.core.base,
   mormot.core.text,
+  mormot.core.unicode,
   registry,
   LazFileUtils,
   LazUTF8,
@@ -609,6 +615,36 @@ begin
   {$ENDIF}
 end;
 
+{$ifdef unix}
+function GetKerberosDomainFromCCacheOrKeytab: String;
+var
+  KRB5CCNAME, KRB5_KTNAME: String;
+  Realm, principal: RawUtf8;
+begin
+  KRB5CCNAME := GetEnvironmentVariableUTF8('KRB5CCNAME');
+  if (KRB5CCNAME<>'') and KRB5CCNAME.StartsWith('FILE:') then
+  begin
+    FileCcachePrincipal(Copy(KRB5CCNAME, Length('FILE:')+1,length(KRB5CCNAME)), @Realm);
+    if Realm <> '' then
+      Exit(Realm);
+  end;
+
+  KRB5_KTNAME := GetEnvironmentVariableUTF8('KRB5_CLIENT_KTNAME');
+  if KRB5_KTNAME='' then
+    KRB5_KTNAME := GetEnvironmentVariableUTF8('KRB5_KTNAME');
+  if KRB5_KTNAME='' then
+    KRB5_KTNAME := '/etc/krb5.keytab';
+  if (KRB5_KTNAME<>'') and FileExistsUTF8(KRB5_KTNAME) then
+  begin
+    principal := FileIsKeyTabMachineAccountPrincipal(KRB5_KTNAME);
+    if principal <> '' then
+      Result := SplitRight(principal,'@');
+  end;
+
+end;
+{$endif}
+
+
 function GetDomainName: String;
 var
   {$IF defined(UNIX)}
@@ -627,10 +663,13 @@ var
 begin
   Result := '';
   {$IF defined(UNIX)}
-  Result := '';
-  Host := gethostname();
-  if (Host <> '') and (Pos('.', Host) > 0) then
-    Result := Copy(Host, Pos('.', Host) + 1, 255);
+  Result := GetKerberosDomainFromCCacheOrKeytab;
+  if result = '' then
+  begin
+    Host := gethostname();
+    if (Host <> '') and (Pos('.', Host) > 0) then
+      Result := Copy(Host, Pos('.', Host) + 1, 255);
+  end;
   {$ELSEIF defined(WINDOWS)}
   InfoBufferSize := 1000;
   AccountSize := SizeOf(AccountName);
@@ -658,7 +697,9 @@ end;
 
 function GetUserNameAndDomain: String;
 var
-  Domain: String;
+  KRB5CCNAME: String;
+  Realm: RawUtf8;
+  Domain: RawByteString;
 begin
   {$ifdef windows}
   Result := Utf8Encode(sysutils.GetEnvironmentVariable('USERNAME'));
@@ -669,39 +710,28 @@ begin
     Result := Result + '@.';
   {$else}
   Result := GetUserName; // on linux, joined to domain with sssd, domain already in GetUsername
-  {Domain := GetDomainName;
-  if Domain <> '' then
-    Result := Result + '@' + Domain;
-  }
-  {$endif}
-end;
-
-(*
-function GetDomainHostnameFromKeytab: String;
-var
-  klistout: TStringArray;
-begin
-  if not FileExistsUTF8('/etc/krb5.keytab') then
-      Exit('');
-  {$ifdef linux}
-  cmd := 'klist -k'
-  {$elseif defined(darwin)}
-  cmd := 'ktutil -k /etc/krb5.keytab list'
-  {$endif}
-  try
-    klistout := StrSplitLines(RunTask(cmd,ExitStatus));
-    splitlist = run(cmd).split('$@', 1)
-  except
-    on E:Exception do
-      Exit('');
+  if pos('@', Result)<=0 then
+  begin
+    KRB5CCNAME := GetEnvironmentVariableUTF8('KRB5CCNAME');
+    if (KRB5CCNAME<>'') and KRB5CCNAME.StartsWith('FILE:') then
+    begin
+      Result := FileCcachePrincipal(Copy(KRB5CCNAME, Length('FILE:')+1,length(KRB5CCNAME)), @Realm);
+      if Result <> '' then
+        Exit;
+    end;
   end;
-
-  hostname = str(splitlist[0].rsplit(' ', 1)[-1]).split('/')[-1]
-  domain = splitlist[1].split('\n')[0].strip()
-
-  return (hostname,domain)
+  {$endif}
 end;
-*)
+
+function GetDomainHostnameFromKeytab(KTFilename:String): String;
+begin
+  Result := '';
+  if KTFilename = '' then
+    KTFilename := '/etc/krb5.keytab';
+  if not FileExistsUTF8(KTFilename) or not FileIsKeyTab(KTFilename) then
+      Exit('');
+  Result := FileIsKeyTabMachineAccountPrincipal(KTFilename, True);
+end;
 
 function GetWorkgroupName: String;
 var

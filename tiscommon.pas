@@ -700,6 +700,9 @@ var
   KRB5CCNAME: String;
   Realm: RawUtf8;
   Domain: RawByteString;
+  {$ifdef darwin}
+  Output: String;
+  {$endif}
 begin
   {$ifdef windows}
   Result := Utf8Encode(sysutils.GetEnvironmentVariable('USERNAME'));
@@ -719,6 +722,15 @@ begin
       if Result <> '' then
         Exit;
     end;
+    {$ifdef darwin}
+    Domain := '';
+    if (Result <> '') and RunCommand(FormatUtf8('dscl . -read "/Users/%" OriginalNodeName 2>/dev/null', [Result]), Output) then
+    begin
+      Domain := Trim(SplitRight(Trim(Output), '/'));
+    end;
+    if Domain <> '' then
+      Result := Result + '@' + Domain;
+    {$endif}
   end;
   {$endif}
 end;

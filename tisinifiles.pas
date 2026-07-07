@@ -63,6 +63,7 @@ procedure IniWriteString(const FileName, Section, Line, Value: string);         
 procedure IniDeleteKey(const FileName, Section, Line: string);
 
 function IniHasKey(const FileName, Section, Line: string):Boolean;
+function IniHasSection(const FileName, Section: string):Boolean;
 
 implementation
 
@@ -165,6 +166,18 @@ begin
   Ini := TTisInifiles.Create(FileName);
   try
     Result := Ini.ValueExists(Section,Line);
+  finally
+    Ini.Free;
+  end;
+end;
+
+function IniHasSection(const FileName, Section: string): Boolean;
+var
+  Ini: TTisInifiles;
+begin
+  Ini := TTisInifiles.Create(FileName);
+  try
+    Result := Ini.SectionExists(Section);
   finally
     Ini.Free;
   end;

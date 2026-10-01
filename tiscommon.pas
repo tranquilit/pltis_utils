@@ -297,6 +297,9 @@ uses
   {$ENDIF}
   , FileInfo
   , LCLIntf
+  {$IFDEF LINUX}
+  , Graphics
+  {$ENDIF}
   ;
 
 procedure Logger(Msg: String;level:LogLevel=WARNING);
@@ -1020,9 +1023,15 @@ function IsDarkMode: Boolean;
 var
   s : AnsiString;
 {$ENDIF}
+{$IFDEF LINUX}
+  function ColorLevel(C: TColor): double;
+  begin
+    Result:= Red(C)*0.3 + Green(C)*0.59 + Blue(C)*0.11;
+  end;
+{$ENDIF}
 begin
   Result := False;
-  {$IFDEF Windows}
+  {$IF defined(Windows)}
   with TRegistry.Create do
   try
     RootKey := HKEY_CURRENT_USER;
@@ -1032,13 +1041,14 @@ begin
   finally
     Free;
   end;
-  {$ENDIF}
-  {$IFDEF DARWIN}
+  {$ELSEIF defined(DARWIN)}
   try
     RunCommand('/usr/bin/defaults read -g AppleInterfaceStyle', s);
     Result := Pos('Dark', s) > 0;
   except
   end;
+  {$ELSEIF defined(LINUX)}
+    Result := ColorLevel(ColorToRGB(clWindow)) < ColorLevel(ColorToRGB(clWindowText));
   {$ENDIF}
 end;
 

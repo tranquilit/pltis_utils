@@ -300,6 +300,7 @@ function StrSplitLines(St: String): TStringArray;
 function StrArrayIntersect(const a1,a2:TStringArray):TStringArray;
 
 function CompareStringArray(const a,b: TStringArray): Integer;
+function CompareAnsiStringArray(const a,b: TAnsiStringArray): Integer;
 
 { TStringArrayHelper }
 type
@@ -319,6 +320,26 @@ type
     function Count: Cardinal; inline;
     function IsEqual(const other: TStringArray): Boolean;
     function Compare(const b: TStringArray): Integer;
+  end;
+
+{ TAnsiStringArrayHelper }
+type
+  TAnsiStringArrayHelper = type helper for TAnsiStringArray
+    function First: AnsiString;
+    function Last: AnsiString;
+    function ClearEmptyItems(EmptyItems: TAnsiStringArray=nil): TAnsiStringArray;
+    function Append(const a: AnsiString; mustBeUnique: Boolean=False; blacklist: TAnsiStringArray=nil): Boolean;
+    function Exist(const a: AnsiString): Boolean;
+    function IndexOf(const a: AnsiString): Integer;
+    function Remove(const a: AnsiString; removeAll: Boolean=True): Boolean;
+    function Remove(const other: Array of Ansistring): Boolean;
+    function Intersect(const other:TAnsiStringArray):TAnsiStringArray;
+    function Join(Sep: AnsiString): AnsiString;
+    procedure Extend(const other:Array of Ansistring);
+    procedure ExtendMissing(const other:Array of Ansistring);
+    function Count: Cardinal; inline;
+    function IsEqual(const other: TAnsiStringArray): Boolean;
+    function Compare(const b: TAnsiStringArray): Integer;
   end;
 
 implementation
@@ -2644,6 +2665,25 @@ begin
   Exit(0);
 end;
 
+function CompareAnsiStringArray(const a, b: TAnsiStringArray): Integer;
+var
+  i: Integer;
+begin
+  i := -1;
+  for i := low(a) to high(a) do
+  begin
+    if i>high(b) then
+      Exit(1);
+    if a[i] < b[i] then
+      Exit(-1);
+    if a[i] > b[i] then
+      Exit(1);
+  end;
+  if i<high(b) then
+    Exit(-1);
+  Exit(0);
+end;
+
 { TStringArrayHelper }
 function TStringArrayHelper.First: String;
 begin
@@ -2820,6 +2860,188 @@ end;
 function TStringArrayHelper.Compare(const b: TStringArray): Integer;
 begin
   Result := CompareStringArray(Self,b);
+end;
+
+{ TAnsiStringArrayHelper }
+
+function TAnsiStringArrayHelper.First: AnsiString;
+begin
+  if Length(Self) = 0 then
+    Exit('');
+  Exit(Self[0]);
+end;
+
+function TAnsiStringArrayHelper.Last: AnsiString;
+begin
+  if Length(Self) = 0 then
+    Exit('');
+  Exit(Self[Length(Self) - 1]);
+end;
+
+function TAnsiStringArrayHelper.ClearEmptyItems(EmptyItems: TAnsiStringArray
+  ): TAnsiStringArray;
+var
+  i: Integer;
+begin
+  if not Assigned(EmptyItems) then
+    EmptyItems := [''];
+  for i := Length(Self) - 1 downto 0 do
+    if Self[i] in EmptyItems then
+      Delete(Self, i, 1);
+  Result := Self;
+end;
+
+function TAnsiStringArrayHelper.Append(const a: AnsiString;
+  mustBeUnique: Boolean; blacklist: TAnsiStringArray): Boolean;
+begin
+  if (mustBeUnique and Exist(a)) or ((Length(blacklist) > 0) and  blacklist.Exist(a)) then
+    Exit(False);
+  SetLength(self,Length(Self)+1);
+  Self[Length(Self)-1] := a;
+  Exit(True);
+end;
+
+function TAnsiStringArrayHelper.Exist(const a: AnsiString): Boolean;
+var
+  i: Integer;
+begin
+  for i := 0 to Length(Self) - 1 do
+    if Self[i] = a then
+      Exit(True);
+  Exit(False);
+end;
+
+function TAnsiStringArrayHelper.IndexOf(const a: AnsiString): Integer;
+var
+  i: Integer;
+begin
+  for i := 0 to Length(Self) - 1 do
+    if Self[i] = a then
+      Exit(i);
+  Exit(-1);
+end;
+
+function TAnsiStringArrayHelper.Remove(const a: AnsiString; removeAll: Boolean
+  ): Boolean;
+var
+  i, initLength, ct: Integer;
+begin
+  initLength := Length(Self);
+  ct := 0;
+  i := 0;
+  while i < Length(Self) do
+  begin
+    if Self[i] = a then
+    begin
+      if not removeAll then
+      begin
+        Delete(Self, i, 1);
+        Exit(True);
+      end
+      else
+        Inc(ct);
+    end
+    else if ct <> 0 then
+    begin
+      Delete(Self, i - ct, ct);
+      Dec(i, ct);
+      ct := 0;
+    end;
+    Inc(i);
+  end;
+  if ct > 0 then
+    Delete(Self, i - ct, ct);
+  Exit(Length(Self) <> initLength);
+end;
+
+function TAnsiStringArrayHelper.Remove(const other: array of Ansistring
+  ): Boolean;
+var
+  Item: AnsiString;
+begin
+  Result := False;
+  for Item in other do
+    if Self.Remove(Item) then
+      Result := True;
+end;
+
+function TAnsiStringArrayHelper.Intersect(const other: TAnsiStringArray
+  ): TAnsiStringArray;
+var
+  i,j,ResultSize:integer;
+begin
+  if length(self)<length(other) then
+    SetLength(Result,length(self))
+  else
+    SetLength(Result,length(other));
+  ResultSize := 0;
+  for i:=0 to Length(self)-1 do
+  begin
+    for j := 0 to Length(other)-1 do
+    begin
+      if self[i] = other[j] then
+      begin
+        result[ResultSize] := self[i];
+        Inc(ResultSize);
+      end;
+    end;
+  end;
+  SetLength(result,ResultSize);
+end;
+
+function TAnsiStringArrayHelper.Join(Sep: AnsiString): AnsiString;
+var
+  i:integer;
+begin
+  Result := '';
+  for i:=0 to length(Self)-1 do
+  begin
+    Result:=Result+Self[i];
+    if i<length(Self)-1 then
+      Result := Result+Sep;
+  end;
+end;
+
+procedure TAnsiStringArrayHelper.Extend(const other: array of Ansistring);
+var
+  S: AnsiString;
+begin
+  for S in Other do
+    Self.Append(S);
+end;
+
+procedure TAnsiStringArrayHelper.ExtendMissing(const other: array of Ansistring
+  );
+var
+  S: AnsiString;
+begin
+  for S in Other do
+    if not (S in Self) then
+      Self.Append(S);
+end;
+
+function TAnsiStringArrayHelper.Count: Cardinal;
+begin
+  Result := length(Self);
+end;
+
+function TAnsiStringArrayHelper.IsEqual(const other: TAnsiStringArray): Boolean;
+var
+  i: Integer;
+begin
+  Result := Count = other.Count;
+  if Result then
+    for i := 0 to Count - 1 do
+      if Self[i] <> Other[i] then
+      begin
+        Result := False;
+        break;
+      end;
+end;
+
+function TAnsiStringArrayHelper.Compare(const b: TAnsiStringArray): Integer;
+begin
+  Result := CompareAnsiStringArray(Self,b);
 end;
 
 end.

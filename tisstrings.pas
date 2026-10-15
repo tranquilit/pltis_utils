@@ -2669,6 +2669,7 @@ begin
   Exit(0);
 end;
 
+{$if declared(TAnsiStringArray)}
 function CompareAnsiStringArray(const a, b: TAnsiStringArray): Integer;
 var
   i: Integer;
@@ -2687,6 +2688,7 @@ begin
     Exit(-1);
   Exit(0);
 end;
+{$endif} //{$if declared(TAnsiStringArray)}
 
 { TStringArrayHelper }
 function TStringArrayHelper.First: String;

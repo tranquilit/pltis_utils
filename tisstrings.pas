@@ -300,9 +300,9 @@ function StrSplitLines(St: String): TStringArray;
 function StrArrayIntersect(const a1,a2:TStringArray):TStringArray;
 
 function CompareStringArray(const a,b: TStringArray): Integer;
-{$IF FPC_FULLVERSION>=30203}
+{$if declared(TAnsiStringArray)}
 function CompareAnsiStringArray(const a,b: TAnsiStringArray): Integer;
-{$ENDIF} //{$IF FPC_FULLVERSION>=30203}
+{$endif} //{$if declared(TAnsiStringArray)}
 
 { TStringArrayHelper }
 type
@@ -324,7 +324,7 @@ type
     function Compare(const b: TStringArray): Integer;
   end;
 
-{$IF FPC_FULLVERSION>=30203}
+{$if declared(TAnsiStringArray)}
 { TAnsiStringArrayHelper }
 type
   TAnsiStringArrayHelper = type helper for TAnsiStringArray
@@ -344,7 +344,7 @@ type
     function IsEqual(const other: TAnsiStringArray): Boolean;
     function Compare(const b: TAnsiStringArray): Integer;
   end;
-{$ENDIF} //{$IF FPC_FULLVERSION>=30203}
+{$endif} //{$if declared(TAnsiStringArray)}
 
 implementation
 
@@ -2866,7 +2866,7 @@ begin
   Result := CompareStringArray(Self,b);
 end;
 
-{$IF FPC_FULLVERSION>=30203}
+{$if declared(TAnsiStringArray)}
 { TAnsiStringArrayHelper }
 
 function TAnsiStringArrayHelper.First: AnsiString;
@@ -3048,7 +3048,7 @@ function TAnsiStringArrayHelper.Compare(const b: TAnsiStringArray): Integer;
 begin
   Result := CompareAnsiStringArray(Self,b);
 end;
-{$ENDIF} //{$IF FPC_FULLVERSION>=30203}
+{$endif} //{$if declared(TAnsiStringArray)}
 
 end.
 

@@ -602,9 +602,9 @@ var
 begin
   Result := '';
   {$IF defined(UNIX)}
-  Result := GetEnvironmentVariable('LOGNAME');
+  Result := GetEnvironmentVariableUTF8('LOGNAME');
   if Result = '' then
-    Result := GetEnvironmentVariable('USER');
+    Result := GetEnvironmentVariableUTF8('USER');
   {$ELSEIF defined(WINDOWS)}
   {dwUSize := 21 * SizeOf(WideChar); // user name can be up to 20 characters
   GetMem( pcUser, dwUSize); // allocate memory for the string
@@ -614,7 +614,7 @@ begin
   finally
     FreeMem( pcUser ); // now free the memory allocated for the string
   end;}
-  Result := Utf8Encode(sysutils.GetEnvironmentVariable('USERNAME'));
+  Result := Utf8Encode(GetEnvironmentVariableUTF8('USERNAME'));
   {$ENDIF}
 end;
 
@@ -708,11 +708,11 @@ var
   {$endif}
 begin
   {$ifdef windows}
-  Result := Utf8Encode(sysutils.GetEnvironmentVariable('USERNAME'));
-  Domain := LowerCase(Utf8Encode(sysutils.GetEnvironmentVariable('USERDNSDOMAIN')));
+  Result := GetEnvironmentVariableUTF8('USERNAME');
+  Domain := LowerCase(GetEnvironmentVariableUTF8('USERDNSDOMAIN'));
   if Domain <> '' then
     Result := Result + '@' + Domain
-  else if UpperCase(sysutils.GetEnvironmentVariable('COMPUTERNAME')) = UpperCase('\\'+sysutils.GetEnvironmentVariable('LOGONSERVER')) then
+  else if UpperCase(GetEnvironmentVariableUTF8('COMPUTERNAME')) = UpperCase('\\'+GetEnvironmentVariableUTF8('LOGONSERVER')) then
     Result := Result + '@.';
   {$else}
   Result := GetUserName; // on linux, joined to domain with sssd, domain already in GetUsername
